@@ -1,0 +1,5 @@
+{
+  "name": "Gemini Co-Writer Notebook",
+  "description": "A collaborative notebook where you can maintain markdown notes and chat with Gemini, which always has the latest version of your notes as context. It's like having an AI partner who shares your scratchpad.",
+  "requestFramePermissions": []
+}
