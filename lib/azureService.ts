@@ -40,7 +40,7 @@ export const streamChatResponse = async (
         const response = await client.path("/chat/completions").post({
             body: {
                 messages: azureMessages,
-                max_tokens: 32768, // Or adjust as needed
+                // max_tokens: 32768, // Or adjust as needed
                 model: modelName,
                 stream: true,
             }

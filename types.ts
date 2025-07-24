@@ -1,4 +1,3 @@
-
 export interface MarkdownCellData {
   id: string;
   content: string;
