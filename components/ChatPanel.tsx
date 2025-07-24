@@ -13,6 +13,7 @@ interface ChatPanelProps {
   onRejectChanges: (messageId: string) => void;
   onHighlightCell: (cellId: string | null) => void;
   modelName: string;
+  isTtsSpeaking: boolean; // NEW: Added prop for TTS state
 }
 
 const ChatPanel: React.FC<ChatPanelProps> = ({
@@ -23,6 +24,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
   onRejectChanges,
   onHighlightCell,
   modelName,
+  isTtsSpeaking, // NEW: Added prop for TTS state
 }) => {
   const [input, setInput] = useState('');
   const [isListening, setIsListening] = useState(false);
@@ -35,12 +37,34 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
   const finalTranscriptRef = useRef('');
   const silenceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const recordingModeRef = useRef(recordingMode); // New ref for mode
-
+  const recordingModeRef = useRef(recordingMode);
+  const isListeningRef = useRef(isListening);
+  const speechBufferRef = useRef(''); // NEW: Buffer for speech during loading
+  
+  // keep ref in sync with state
+  useEffect(() => {
+    isListeningRef.current = isListening;
+  }, [isListening]);
+  
   // Sync recording mode with state
   useEffect(() => {
     recordingModeRef.current = recordingMode;
   }, [recordingMode]);
+
+  // NEW: Effect to handle speech buffer when loading completes
+  useEffect(() => {
+    if (!isLoading && speechBufferRef.current) {
+      onSendMessage(speechBufferRef.current.trim());
+      speechBufferRef.current = '';
+    }
+  }, [isLoading, onSendMessage]);
+
+  // NEW: Effect to pause recognition during TTS and model responses
+  useEffect(() => {
+    if ((isLoading || isTtsSpeaking) && isListening) {
+      recognitionRef.current.stop();
+    }
+  }, [isLoading, isTtsSpeaking, isListening]);
 
   // Speech recognition setup
   useEffect(() => {
@@ -60,9 +84,15 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
         if (event.results[i].isFinal) {
           const finalText = event.results[i][0].transcript;
           finalTranscriptRef.current += finalText;
-          // Submit immediately in continuous mode
+          
+          // NEW: Handle continuous mode with loading state
           if (recordingModeRef.current === 'continuous') {
-            onSendMessage(finalText.trim());
+            if (!isLoading && !isTtsSpeaking) {
+              onSendMessage(finalText.trim());
+            } else {
+              // Buffer speech during loading/TTS
+              speechBufferRef.current += finalText + ' ';
+            }
             finalTranscriptRef.current = '';
           }
         } else {
@@ -101,17 +131,17 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
         setCountdown(null);
       } else {
         // In continuous mode: restart recognition with proper cleanup
-        if (isListening) {
-          // Clear previous state before restarting
+        if (isListeningRef.current && !isLoading && !isTtsSpeaking) {
           setInterimSpeech('');
           finalTranscriptRef.current = '';
-          
           try {
             recognitionRef.current.start();
           } catch (error) {
             console.error('Recognition restart error:', error);
             setIsListening(false);
           }
+        } else {
+          setIsListening(false);
         }
       }
     };
@@ -130,7 +160,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
       if (silenceTimeoutRef.current) clearTimeout(silenceTimeoutRef.current);
       if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
     };
-  }, [onSendMessage, speechLang]);
+  }, [onSendMessage, speechLang, isTtsSpeaking]); // NEW: Added isTtsSpeaking dependency
 
   // Countdown effect - only for auto-stop mode
   useEffect(() => {
@@ -164,6 +194,10 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
   };
 
   const toggleRecordingMode = () => {
+    // NEW: Immediately disable continuous mode
+    if (isListening && recordingMode === 'continuous') {
+      recognitionRef.current.stop();
+    }
     setRecordingMode(prev => prev === 'auto-stop' ? 'continuous' : 'auto-stop');
   };
 
@@ -186,6 +220,30 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
       setInput('');
     }
   };
+
+  // NEW: Restart speech recognition in continuous mode after response & TTS are both finished
+  useEffect(() => {
+    if (
+      recordingMode === 'continuous' &&
+      isListening &&
+      !isLoading &&
+      !isTtsSpeaking
+    ) {
+      // browser's recognition might already be running - first try to stop if needed
+      try {
+        recognitionRef.current.stop();
+      } catch (e) {}
+      // restart after short delay to prevent race with onend handler
+      setTimeout(() => {
+        try {
+          recognitionRef.current.start();
+        } catch (err) {
+          // Recognition might already be started; ignore
+        }
+      }, 100);
+    }
+    // eslint-disable-next-line
+  }, [isLoading, isTtsSpeaking]);
 
   return (
     <div className="bg-gray-800/50 backdrop-blur-sm border-l border-gray-700/50 w-full flex flex-col h-full max-h-full">
@@ -273,8 +331,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
             <button
               type="button"
               onClick={toggleRecordingMode}
-              disabled={isListening}
-              className={`p-1 rounded-full ${!isListening ? 'text-gray-400 hover:text-white' : 'text-gray-500 cursor-not-allowed'}`}
+              className={`p-1 rounded-full ${!isListening ? 'text-gray-400 hover:text-white' : 'text-gray-500'}`} // REMOVED: disabled state
               title={`Switch to ${recordingMode === 'auto-stop' ? 'continuous' : 'auto-stop'} mode`}
             >
               {recordingMode === 'auto-stop' ? (
