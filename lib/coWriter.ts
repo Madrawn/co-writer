@@ -20,6 +20,7 @@ export type StreamChatFn = (
 type StateListener = (state: CoWriterState) => void;
 
 const LOCAL_STORAGE_KEY = 'co-writer-notebook-cells';
+const LOCAL_STORAGE_SLOT_KEY = 'co-writer-selected-slot';
 
 const INITIAL_CELLS: MarkdownCellData[][] = [[
     {
@@ -58,7 +59,7 @@ export class CoWriter {
             cells: this.loadCellsFromStorage(),
             chatMessages: INITIAL_MESSAGES,
             isLoading: false,
-            slot: default_slot
+            slot: this.loadSlotFromStorage()
         };
     }
 
@@ -67,6 +68,7 @@ export class CoWriter {
     }
     public setSlot(slot: number) {
         this.state.slot = slot;
+        this.saveSlotToStorage();
     }
     public updateCellId = (oldId: string, newId: string) => {
         if (!oldId || !newId || oldId === newId) return;
@@ -110,6 +112,14 @@ export class CoWriter {
         }
     }
 
+    private saveSlotToStorage() {
+        try {
+            localStorage.setItem(LOCAL_STORAGE_SLOT_KEY, String(this.state.slot));
+        } catch (error) {
+            console.error("Failed to save slot to localStorage", error);
+        }
+    }
+
     private loadCellsFromStorage(): MarkdownCellData[][] {
         try {
             const savedCells = localStorage.getItem(LOCAL_STORAGE_KEY);
@@ -123,6 +133,21 @@ export class CoWriter {
             console.error("Failed to load or parse cells from localStorage", error);
         }
         return INITIAL_CELLS;
+    }
+
+    private loadSlotFromStorage(): number {
+        try {
+            const savedSlot = localStorage.getItem(LOCAL_STORAGE_SLOT_KEY);
+            if (savedSlot !== null) {
+                const slotNum = Number(savedSlot);
+                if (!isNaN(slotNum) && slotNum >= 0 && slotNum < INITIAL_CELLS.length) {
+                    return slotNum;
+                }
+            }
+        } catch (error) {
+            console.error("Failed to load slot from localStorage", error);
+        }
+        return 0;
     }
 
     public addCell = (content: string = ''): string => {
