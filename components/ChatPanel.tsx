@@ -12,6 +12,7 @@ interface ChatPanelProps {
   onApplyChanges: (messageId: string) => void;
   onRejectChanges: (messageId: string) => void;
   onHighlightCell: (cellId: string | null) => void;
+  modelName: string;
 }
 
 const ChatPanel: React.FC<ChatPanelProps> = ({
@@ -21,6 +22,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
   onApplyChanges,
   onRejectChanges,
   onHighlightCell,
+  modelName,
 }) => {
   const [input, setInput] = useState('');
   const [isListening, setIsListening] = useState(false);
@@ -173,6 +175,8 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
 
   return (
     <div className="bg-gray-800/50 backdrop-blur-sm border-l border-gray-700/50 w-full flex flex-col h-full max-h-full">
+      {/* Show selected model in chat panel header */}
+      <div className="px-6 pt-4 pb-2 text-gray-300 text-sm font-semibold">Model: {modelName}</div>
       <div className="flex-1 p-6 overflow-y-auto space-y-4">
         {messages.map((msg) => {
           const showChangeCard = msg.role === 'model' && msg.proposedChanges && msg.proposedChanges.length > 0;

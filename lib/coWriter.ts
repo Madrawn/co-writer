@@ -1,24 +1,27 @@
 
 import type { MarkdownCellData, ChatMessage } from '../types';
+import { models } from './azureService';
 import { parseGeminiResponse } from './parser';
 
 
 export interface CoWriterState {
-    cells: MarkdownCellData[];
+    cells: MarkdownCellData[][];
     chatMessages: ChatMessage[];
     isLoading: boolean;
+    slot: number;
 }
 
 export type StreamChatFn = (
     historyWithNewMessage: ChatMessage[],
     cells: MarkdownCellData[],
-    feedback: string | null
+    feedback: string | null,
+    modelName: keyof typeof models
 ) => Promise<AsyncGenerator<{ text: string | undefined }>>;
 type StateListener = (state: CoWriterState) => void;
 
 const LOCAL_STORAGE_KEY = 'co-writer-notebook-cells';
 
-const INITIAL_CELLS: MarkdownCellData[] = [
+const INITIAL_CELLS: MarkdownCellData[][] = [[
     {
         id: crypto.randomUUID(),
         content: `# Welcome to your Co-Writer Notebook!
@@ -31,7 +34,7 @@ This is a collaborative space for you and CoWriter. Here's how it works:
 
 CoWriter will always be up-to-date with your notes. Try asking it to summarize, expand upon, or refactor the content here! You can even ask it to "rewrite the first cell" and it will propose the change for you to approve.`
     }
-];
+], [], [], [], []];
 
 const INITIAL_MESSAGES: ChatMessage[] = [
     {
@@ -46,19 +49,34 @@ export class CoWriter {
     private listeners: Set<StateListener> = new Set();
     private feedbackForNextPrompt: string | null = null;
     private streamChatFn: StreamChatFn;
-    constructor(streamChatFn: StreamChatFn) {
+    private modelName: string;
+    constructor(streamChatFn: StreamChatFn, initialModelName: keyof typeof models) {
         this.streamChatFn = streamChatFn;
+        this.modelName = initialModelName;
+        const default_slot = 0; // Initialize slot to 0
         this.state = {
             cells: this.loadCellsFromStorage(),
             chatMessages: INITIAL_MESSAGES,
             isLoading: false,
+            slot: default_slot
         };
+    }
+
+    public setModelName(modelName: string) {
+        this.modelName = modelName;
+    }
+    public setSlot(slot: number) {
+        this.state.slot = slot;
     }
     public updateCellId = (oldId: string, newId: string) => {
         if (!oldId || !newId || oldId === newId) return;
         this.setState(prevState => ({
-            cells: prevState.cells.map(cell =>
-                cell.id === oldId ? { ...cell, id: newId } : cell
+            cells: prevState.cells.map((slotCells, slotIndex) =>
+                slotIndex === prevState.slot
+                    ? slotCells.map(cell =>
+                        cell.id === oldId ? { ...cell, id: newId } : cell
+                    )
+                    : slotCells
             )
         }));
         this.saveCellsToStorage();
@@ -92,7 +110,7 @@ export class CoWriter {
         }
     }
 
-    private loadCellsFromStorage(): MarkdownCellData[] {
+    private loadCellsFromStorage(): MarkdownCellData[][] {
         try {
             const savedCells = localStorage.getItem(LOCAL_STORAGE_KEY);
             if (savedCells) {
@@ -110,7 +128,11 @@ export class CoWriter {
     public addCell = (content: string = ''): string => {
         const newCell: MarkdownCellData = { id: crypto.randomUUID(), content };
         this.setState(prevState => ({
-            cells: [...prevState.cells, newCell]
+            cells: prevState.cells.map((slotCells, slotIndex) =>
+                slotIndex === prevState.slot
+                    ? [...slotCells, newCell]
+                    : slotCells
+            )
         }));
         this.saveCellsToStorage();
         return newCell.id;
@@ -118,19 +140,27 @@ export class CoWriter {
 
     public deleteCell = (id: string) => {
         this.setState(prevState => ({
-            cells: prevState.cells.filter(cell => cell.id !== id)
+            cells: prevState.cells.map((slotCells, slotIndex) =>
+                slotIndex === prevState.slot
+                    ? slotCells.filter(cell => cell.id !== id)
+                    : slotCells
+            )
         }));
         this.saveCellsToStorage();
     };
 
     public updateCell = (id: string, content: string) => {
         this.setState(prevState => ({
-            cells: prevState.cells.map(cell => (cell.id === id ? { ...cell, content } : cell))
+            cells: prevState.cells.map((slotCells, slotIndex) =>
+                slotIndex === prevState.slot
+                    ? slotCells.map(cell => (cell.id === id ? { ...cell, content } : cell))
+                    : slotCells
+            )
         }));
         this.saveCellsToStorage();
     };
 
-    public handleSendMessage = async (message: string) => {
+    public handleSendMessage = async (message: string, modelNameOverride?: string) => {
         this.setState(() => ({ isLoading: true }));
 
         const newUserMessage: ChatMessage = { id: crypto.randomUUID(), role: 'user', content: message };
@@ -147,7 +177,8 @@ export class CoWriter {
         }));
 
         try {
-            const stream = await this.streamChatFn(currentChatHistory!, this.state.cells, this.feedbackForNextPrompt);
+            const modelToUse = modelNameOverride || this.modelName;
+            const stream = await this.streamChatFn(currentChatHistory!, this.state.cells[this.state.slot], this.feedbackForNextPrompt, modelToUse);
             if (this.feedbackForNextPrompt) {
                 this.feedbackForNextPrompt = null;
             }
@@ -190,7 +221,7 @@ export class CoWriter {
         const changesToApply = message.proposedChanges;
 
         this.setState(prevState => {
-            let newCellsState = [...prevState.cells];
+            let newCellsState: MarkdownCellData[] = [...prevState.cells[prevState.slot]];
             const cellsToUpdate = new Map<string, string>();
             const cellsToAdd: MarkdownCellData[] = [];
             const existingCellIds = new Set(newCellsState.map(c => c.id));
@@ -213,8 +244,12 @@ export class CoWriter {
 
             newCellsState.push(...cellsToAdd);
 
+            const newCells = prevState.cells.map((slotCells, idx) =>
+                idx === prevState.slot ? newCellsState : slotCells
+            );
+
             return {
-                cells: newCellsState,
+                cells: newCells,
                 chatMessages: prevState.chatMessages.map(msg =>
                     msg.id === messageId ? { ...msg, reviewDecision: 'applied' } : msg
                 )

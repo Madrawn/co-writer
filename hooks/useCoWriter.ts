@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { speakTextWithAzureTTS, playAudioBlob } from '../lib/azureTTSService';
 import { useCoWriterCore } from './useCoWriterCore';
 
-export const useCoWriter = () => {
+export const useCoWriter = (modelName: string, selectedSlot: number) => {
   const {
     cells,
     chatMessages,
@@ -14,7 +14,7 @@ export const useCoWriter = () => {
     handleSendMessage,
     handleApplyChanges,
     handleRejectChanges,
-  } = useCoWriterCore();
+  } = useCoWriterCore(modelName, selectedSlot);
   const handleUpdateCellId = useCallback((oldId: string, newId: string) => {
     updateCellId(oldId, newId);
   }, [updateCellId]);

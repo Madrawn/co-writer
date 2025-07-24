@@ -6,27 +6,31 @@ import { createSseStream } from "@azure/core-sse";
 import type { ChatMessage, MarkdownCellData } from '../types'; // Assuming you have a ChatMessage type
 import { buildPrompt } from '../lib/promptBuilder'; // Assuming you have a prompt builder
 
-if (!process.env.AZURE_API_KEY || !process.env.AZURE_ENDPOINT || !process.env.AZURE_MODEL_NAME) {
-    throw new Error("AZURE_API_KEY, AZURE_ENDPOINT, and AZURE_MODEL_NAME environment variables must be set.");
+
+
+const options = { apiVersion: "2024-12-01-preview" };
+export const models = {
+    "DeepSeek-R1-0528": { client: () => ModelClient(endpoint, new AzureKeyCredential(apiKey), { apiVersion: "2024-05-01-preview" }) },
+    "gpt-4.1": { client: () => ModelClient(endpoint_oa + "/deployments/gpt-4.1/", new AzureKeyCredential(apiKey), options) },
+    "o4-mini": { client: () => ModelClient(endpoint_oa + "/deployments/o4-mini/", new AzureKeyCredential(apiKey), options) }
+};
+
+if (!process.env.AZURE_API_KEY || !process.env.AZURE_ENDPOINT || !process.env.AZURE_OPENAI_ENDPOINT) {
+    throw new Error("AZURE_API_KEY, AZURE_ENDPOINT, and AZURE_OPENAI_ENDPOINT environment variables must be set.");
 }
-
 const endpoint = process.env.AZURE_ENDPOINT;
-const modelName = process.env.AZURE_MODEL_NAME;
+const endpoint_oa = process.env.AZURE_OPENAI_ENDPOINT;
 const apiKey = process.env.AZURE_API_KEY;
-
-// Use the factory function to create the client
-const client = ModelClient(endpoint, new AzureKeyCredential(apiKey));
-
 export const streamChatResponse = async (
     historyWithNewMessage: ChatMessage[],
     cells: MarkdownCellData[],
-    feedback: string | null
-): Promise<AsyncGenerator<{ text: string | undefined }>> => { // Modified return type to match StreamChatFn
-    const { contents, systemInstruction } = buildPrompt(historyWithNewMessage, cells, feedback);
+    feedback: string | null,
+    modelName: keyof typeof models
+): Promise<AsyncGenerator<{ text: string | undefined }>> => {
+    const client = models[modelName].client();
 
-    // Convert the 'contents' (which I assume is an array of messages)
-    // into the format Azure expects.  Crucially, we need to combine
-    // the system instruction into the messages.
+    const { contents, systemInstruction } = buildPrompt(historyWithNewMessage, cells, feedback);
+    // ...existing code...
     const azureMessages = [
         { role: "system", content: systemInstruction },
         ...contents.map(item => ({ role: item.role == "model" ? "assistant" : item.role, content: item.parts[0].text })),
@@ -36,9 +40,9 @@ export const streamChatResponse = async (
         const response = await client.path("/chat/completions").post({
             body: {
                 messages: azureMessages,
-                max_tokens: 100048, // Or adjust as needed
+                max_tokens: 32768, // Or adjust as needed
                 model: modelName,
-                stream: true
+                stream: true,
             }
         }).asBrowserStream();
 
