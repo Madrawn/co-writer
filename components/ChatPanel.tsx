@@ -29,6 +29,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
   const [interimSpeech, setInterimSpeech] = useState('');
   const [countdown, setCountdown] = useState<number | null>(null);
   const [recordingMode, setRecordingMode] = useState<'auto-stop' | 'continuous'>('auto-stop');
+  const [speechLang, setSpeechLang] = useState<'en-US' | 'de-DE'>('en-US');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
   const finalTranscriptRef = useRef('');
@@ -51,7 +52,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
     const recognition = new (window as any).webkitSpeechRecognition();
     recognition.continuous = true;
     recognition.interimResults = true;
-    recognition.lang = 'en-US';
+    recognition.lang = speechLang;
 
     recognition.onresult = (event: any) => {
       let interimTranscript = '';
@@ -59,7 +60,6 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
         if (event.results[i].isFinal) {
           const finalText = event.results[i][0].transcript;
           finalTranscriptRef.current += finalText;
-          
           // Submit immediately in continuous mode
           if (recordingModeRef.current === 'continuous') {
             onSendMessage(finalText.trim());
@@ -69,10 +69,8 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
           interimTranscript += event.results[i][0].transcript;
         }
       }
-
       setInterimSpeech(interimTranscript);
       setInput(finalTranscriptRef.current + interimTranscript);
-
       if (recordingModeRef.current === 'auto-stop') {
         if (silenceTimeoutRef.current) clearTimeout(silenceTimeoutRef.current);
         setCountdown(5);
@@ -92,17 +90,30 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
     };
 
     recognition.onend = () => {
-      setIsListening(false);
-      
-      // Submit remaining content in auto-stop mode
-      if (recordingModeRef.current === 'auto-stop' && finalTranscriptRef.current.trim() !== '') {
-        onSendMessage(finalTranscriptRef.current.trim());
+      if (recordingModeRef.current === 'auto-stop') {
+        setIsListening(false);
+        if (finalTranscriptRef.current.trim() !== '') {
+          onSendMessage(finalTranscriptRef.current.trim());
+        }
+        setInput('');
+        finalTranscriptRef.current = '';
+        setInterimSpeech('');
+        setCountdown(null);
+      } else {
+        // In continuous mode: restart recognition with proper cleanup
+        if (isListening) {
+          // Clear previous state before restarting
+          setInterimSpeech('');
+          finalTranscriptRef.current = '';
+          
+          try {
+            recognitionRef.current.start();
+          } catch (error) {
+            console.error('Recognition restart error:', error);
+            setIsListening(false);
+          }
+        }
       }
-      
-      setInput('');
-      finalTranscriptRef.current = '';
-      setInterimSpeech('');
-      setCountdown(null);
     };
 
     recognition.onerror = (event: any) => {
@@ -119,7 +130,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
       if (silenceTimeoutRef.current) clearTimeout(silenceTimeoutRef.current);
       if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
     };
-  }, [onSendMessage]);
+  }, [onSendMessage, speechLang]);
 
   // Countdown effect - only for auto-stop mode
   useEffect(() => {
@@ -134,7 +145,6 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
       if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
       if (recognitionRef.current && isListening) recognitionRef.current.stop();
     }
-
     return () => {
       if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
     };
@@ -157,6 +167,10 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
     setRecordingMode(prev => prev === 'auto-stop' ? 'continuous' : 'auto-stop');
   };
 
+  const toggleSpeechLang = () => {
+    setSpeechLang(prev => prev === 'en-US' ? 'de-DE' : 'en-US');
+  };
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -175,12 +189,22 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
 
   return (
     <div className="bg-gray-800/50 backdrop-blur-sm border-l border-gray-700/50 w-full flex flex-col h-full max-h-full">
-      {/* Show selected model in chat panel header */}
-      <div className="px-6 pt-4 pb-2 text-gray-300 text-sm font-semibold">Model: {modelName}</div>
+      {/* Show selected model and language in chat panel header */}
+      <div className="px-6 pt-4 pb-2 text-gray-300 text-sm font-semibold flex items-center justify-between">
+        <span>Model: {modelName}</span>
+        <button
+          type="button"
+          onClick={toggleSpeechLang}
+          disabled={isListening}
+          className={`ml-4 px-2 py-1 rounded text-xs font-medium border ${!isListening ? 'text-gray-400 border-gray-500 hover:text-white hover:border-white' : 'text-gray-500 border-gray-700 cursor-not-allowed'}`}
+          title={`Switch to ${speechLang === 'en-US' ? 'German' : 'English'} (Speech)`}
+        >
+          {speechLang === 'en-US' ? 'EN' : 'DE'}
+        </button>
+      </div>
       <div className="flex-1 p-6 overflow-y-auto space-y-4">
         {messages.map((msg) => {
           const showChangeCard = msg.role === 'model' && msg.proposedChanges && msg.proposedChanges.length > 0;
-
           if (showChangeCard) {
             return (
               <div key={msg.id} className="flex justify-start">
@@ -198,12 +222,10 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
               </div>
             )
           }
-
           return (
             <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div
-                className={`max-w-md rounded-xl px-4 py-2 text-white ${msg.role === 'user' ? 'bg-blue-600' : 'bg-gray-700'
-                  }`}
+                className={`max-w-md rounded-xl px-4 py-2 text-white ${msg.role === 'user' ? 'bg-blue-600' : 'bg-gray-700'}`}
               >
                 <div className="prose prose-invert prose-sm max-w-none prose-p:my-1 prose-p:text-white prose-code:text-pink-300">
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.cleanContent || msg.content}</ReactMarkdown>
@@ -270,8 +292,8 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
               onClick={toggleListening}
               disabled={isLoading}
               className={`p-2 rounded-full relative ${isListening
-                  ? 'text-red-500 bg-red-900/50 animate-pulse'
-                  : 'text-gray-400 bg-gray-600/50 hover:bg-gray-500'
+                ? 'text-red-500 bg-red-900/50 animate-pulse'
+                : 'text-gray-400 bg-gray-600/50 hover:bg-gray-500'
                 } transition-colors`}
               aria-label={isListening ? "Stop listening" : "Start voice input"}
             >
@@ -283,7 +305,6 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
               >
                 <path fillRule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z" clipRule="evenodd" />
               </svg>
-
               {recordingMode === 'auto-stop' && countdown !== null && (
                 <div className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold">
                   {Math.ceil(countdown)}
