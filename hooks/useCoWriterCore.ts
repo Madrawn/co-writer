@@ -1,3 +1,6 @@
+// hooks/useCoWriterCore.ts
+// This hook provides the core functionality of the CoWriter application,
+// allowing components to interact with the CoWriter instance and its state.
 import { useState, useEffect } from 'react';
 import { CoWriter, CoWriterState } from '../lib/coWriter';
 // import { streamChatResponse } from '../lib/geminiService';
