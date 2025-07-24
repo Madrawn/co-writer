@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { speakTextWithAzureTTS, playAudioBlob } from '../lib/azureTTSService';
+import { speakTextInChunks } from '../lib/azureTTSService'; // Updated import
 import { useCoWriterCore } from './useCoWriterCore';
 
 export const useCoWriter = (modelName: string, selectedSlot: number) => {
@@ -45,11 +45,11 @@ export const useCoWriter = (modelName: string, selectedSlot: number) => {
       if (lastModelMsg && lastSpokenIdRef.current !== lastModelMsg.id) {
         lastSpokenIdRef.current = lastModelMsg.id;
         const textToSpeak = lastModelMsg.cleanContent || lastModelMsg.content;
-        speakTextWithAzureTTS(textToSpeak)
-          .then(playAudioBlob)
-          .catch((err) => {
-            console.error('Azure TTS error:', err);
-          });
+        
+        // Use chunked TTS instead of single request
+        speakTextInChunks(textToSpeak).catch((err) => {
+          console.error('Azure TTS error:', err);
+        });
       }
     }
     prevIsLoadingRef.current = isLoading;
