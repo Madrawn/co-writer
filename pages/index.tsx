@@ -10,7 +10,7 @@ const IndexPage: React.FC = () => {
     // Import models from azureService
     // @ts-ignore
     // eslint-disable-next-line
-    const [selectedModel, setSelectedModel] = React.useState(Object.keys(models)[0]);
+    const [selectedModel, setSelectedModel] = React.useState(Object.keys(models)[0] as keyof typeof models);
     const [selectedSlot, setSelectedSlot] = React.useState(0);
     const {
         cells,
@@ -31,10 +31,7 @@ const IndexPage: React.FC = () => {
 
     return (
         <>
-            <Head>
-                <title>Gemini Co-Writer Notebook</title>
-                <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-            </Head>
+
 
             <div className="flex h-screen w-screen bg-gray-900 font-sans">
                 {/* Main Content: Markdown Notebook */}
@@ -47,7 +44,7 @@ const IndexPage: React.FC = () => {
                             <select
                                 id="model-select"
                                 value={selectedModel}
-                                onChange={e => setSelectedModel(e.target.value)}
+                                onChange={e => setSelectedModel(e.target.value as keyof typeof models)}
                                 className="bg-gray-700 text-gray-200 rounded px-2 py-1"
                             >
                                 {Object.keys(models).map((model: string) => (

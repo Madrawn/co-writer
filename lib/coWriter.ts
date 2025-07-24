@@ -50,11 +50,10 @@ export class CoWriter {
     private listeners: Set<StateListener> = new Set();
     private feedbackForNextPrompt: string | null = null;
     private streamChatFn: StreamChatFn;
-    private modelName: string;
+    private modelName: keyof typeof models;
     constructor(streamChatFn: StreamChatFn, initialModelName: keyof typeof models) {
         this.streamChatFn = streamChatFn;
         this.modelName = initialModelName;
-        const default_slot = 0; // Initialize slot to 0
         this.state = {
             cells: this.loadCellsFromStorage(),
             chatMessages: INITIAL_MESSAGES,
@@ -63,7 +62,7 @@ export class CoWriter {
         };
     }
 
-    public setModelName(modelName: string) {
+    public setModelName(modelName: keyof typeof models) {
         this.modelName = modelName;
     }
     public setSlot(slot: number) {
@@ -185,7 +184,7 @@ export class CoWriter {
         this.saveCellsToStorage();
     };
 
-    public handleSendMessage = async (message: string, modelNameOverride?: string) => {
+    public handleSendMessage = async (message: string, modelNameOverride?: keyof typeof models) => {
         this.setState(() => ({ isLoading: true }));
 
         const newUserMessage: ChatMessage = { id: crypto.randomUUID(), role: 'user', content: message };

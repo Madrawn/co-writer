@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { speakTextInChunks } from '../lib/azureTTSService'; // Updated import
 import { useCoWriterCore } from './useCoWriterCore';
+import { models } from '@/lib/azureService';
 
-export const useCoWriter = (modelName: string, selectedSlot: number) => {
+export const useCoWriter = (modelName: keyof typeof models, selectedSlot: number) => {
   const {
     cells,
     chatMessages,

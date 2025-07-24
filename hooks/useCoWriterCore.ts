@@ -2,11 +2,12 @@
 import { useState, useEffect } from 'react';
 import { CoWriter, CoWriterState } from '../lib/coWriter';
 import { streamChatResponse } from '../lib/backendService'; // Updated import
+import { models } from '@/lib/azureService';
 
 // A single, shared instance of the CoWriter class
 let coWriterInstance: CoWriter | null = null;
 
-export const useCoWriterCore = (modelName: string, selectedSlot: number) => {
+export const useCoWriterCore = (modelName: keyof typeof models, selectedSlot: number) => {
   const [state, setState] = useState<CoWriterState>(() => {
     if (!coWriterInstance) {
       coWriterInstance = new CoWriter(streamChatResponse, modelName);
