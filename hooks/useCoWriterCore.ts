@@ -27,6 +27,7 @@ export const useCoWriterCore = () => {
     addCell: coWriterInstance.addCell,
     deleteCell: coWriterInstance.deleteCell,
     updateCell: coWriterInstance.updateCell,
+    updateCellId: coWriterInstance.updateCellId,
     handleSendMessage: coWriterInstance.handleSendMessage,
     handleApplyChanges: coWriterInstance.handleApplyChanges,
     handleRejectChanges: coWriterInstance.handleRejectChanges,

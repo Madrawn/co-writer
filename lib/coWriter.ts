@@ -1,17 +1,19 @@
+
 import type { MarkdownCellData, ChatMessage } from '../types';
 import { parseGeminiResponse } from './parser';
 
+
 export interface CoWriterState {
-  cells: MarkdownCellData[];
-  chatMessages: ChatMessage[];
-  isLoading: boolean;
+    cells: MarkdownCellData[];
+    chatMessages: ChatMessage[];
+    isLoading: boolean;
 }
 
 export type StreamChatFn = (
-  historyWithNewMessage: ChatMessage[],
-  cells: MarkdownCellData[],
-  feedback: string | null
-) => Promise<AsyncGenerator<{ text: string | undefined}>>;
+    historyWithNewMessage: ChatMessage[],
+    cells: MarkdownCellData[],
+    feedback: string | null
+) => Promise<AsyncGenerator<{ text: string | undefined }>>;
 type StateListener = (state: CoWriterState) => void;
 
 const LOCAL_STORAGE_KEY = 'co-writer-notebook-cells';
@@ -52,14 +54,22 @@ export class CoWriter {
             isLoading: false,
         };
     }
-
+    public updateCellId = (oldId: string, newId: string) => {
+        if (!oldId || !newId || oldId === newId) return;
+        this.setState(prevState => ({
+            cells: prevState.cells.map(cell =>
+                cell.id === oldId ? { ...cell, id: newId } : cell
+            )
+        }));
+        this.saveCellsToStorage();
+    };
     public getState(): CoWriterState {
         return { ...this.state };
     }
 
     public subscribe(listener: StateListener): () => void {
         this.listeners.add(listener);
-        listener(this.state); 
+        listener(this.state);
         return () => {
             this.listeners.delete(listener);
         };
@@ -68,12 +78,12 @@ export class CoWriter {
     private notifyListeners() {
         this.listeners.forEach(listener => listener({ ...this.state }));
     }
-    
+
     private setState(updater: (prevState: CoWriterState) => Partial<CoWriterState>) {
         this.state = { ...this.state, ...updater(this.state) };
         this.notifyListeners();
     }
-    
+
     private saveCellsToStorage() {
         try {
             localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(this.state.cells));
@@ -112,7 +122,7 @@ export class CoWriter {
         }));
         this.saveCellsToStorage();
     };
-    
+
     public updateCell = (id: string, content: string) => {
         this.setState(prevState => ({
             cells: prevState.cells.map(cell => (cell.id === id ? { ...cell, content } : cell))
@@ -122,15 +132,15 @@ export class CoWriter {
 
     public handleSendMessage = async (message: string) => {
         this.setState(() => ({ isLoading: true }));
-        
+
         const newUserMessage: ChatMessage = { id: crypto.randomUUID(), role: 'user', content: message };
         let currentChatHistory: ChatMessage[];
-        
+
         this.setState(prevState => {
             currentChatHistory = [...prevState.chatMessages, newUserMessage];
             return { chatMessages: currentChatHistory };
         });
-        
+
         const modelMessageId = crypto.randomUUID();
         this.setState(prevState => ({
             chatMessages: [...prevState.chatMessages, { id: modelMessageId, role: 'model', content: '' }]
@@ -176,7 +186,7 @@ export class CoWriter {
     public handleApplyChanges = (messageId: string) => {
         const message = this.state.chatMessages.find(msg => msg.id === messageId);
         if (!message || !message.proposedChanges) return;
-        
+
         const changesToApply = message.proposedChanges;
 
         this.setState(prevState => {
@@ -194,10 +204,10 @@ export class CoWriter {
                     cellsToAdd.push({ id: change.targetCellId, content: change.newContent });
                 }
             });
-            
-            newCellsState = newCellsState.map(cell => 
-                cellsToUpdate.has(cell.id) 
-                    ? { ...cell, content: cellsToUpdate.get(cell.id)! } 
+
+            newCellsState = newCellsState.map(cell =>
+                cellsToUpdate.has(cell.id)
+                    ? { ...cell, content: cellsToUpdate.get(cell.id)! }
                     : cell
             );
 
@@ -205,19 +215,19 @@ export class CoWriter {
 
             return {
                 cells: newCellsState,
-                chatMessages: prevState.chatMessages.map(msg => 
+                chatMessages: prevState.chatMessages.map(msg =>
                     msg.id === messageId ? { ...msg, reviewDecision: 'applied' } : msg
                 )
             };
         });
-        
+
         this.saveCellsToStorage();
         this.feedbackForNextPrompt = `[User feedback: The previous changes were applied.]`;
     };
 
     public handleRejectChanges = (messageId: string) => {
         this.setState(prevState => ({
-            chatMessages: prevState.chatMessages.map(msg => 
+            chatMessages: prevState.chatMessages.map(msg =>
                 msg.id === messageId ? { ...msg, reviewDecision: 'rejected' } : msg
             )
         }));

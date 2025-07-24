@@ -19,6 +19,7 @@ const App: React.FC = () => {
     handleApplyChanges,
     handleRejectChanges,
     setHighlightedCellId,
+    handleUpdateCellId,
   } = useCoWriter();
 
   return (
@@ -36,6 +37,7 @@ const App: React.FC = () => {
               onStartEditing={startEditingCell}
               onStopEditing={stopEditingCell}
               onDelete={deleteCell}
+              onUpdateCellId={handleUpdateCellId}
             />
           ))}
           <button

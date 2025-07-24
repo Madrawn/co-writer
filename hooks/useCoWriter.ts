@@ -10,10 +10,14 @@ export const useCoWriter = () => {
     addCell: coreAddCell,
     deleteCell,
     updateCell,
+    updateCellId,
     handleSendMessage,
     handleApplyChanges,
     handleRejectChanges,
   } = useCoWriterCore();
+  const handleUpdateCellId = useCallback((oldId: string, newId: string) => {
+    updateCellId(oldId, newId);
+  }, [updateCellId]);
 
   // Track last spoken message to avoid repeats
   const lastSpokenIdRef = useRef<string | null>(null);
@@ -79,5 +83,6 @@ export const useCoWriter = () => {
     handleApplyChanges,
     handleRejectChanges,
     setHighlightedCellId,
+    handleUpdateCellId,
   };
 };
