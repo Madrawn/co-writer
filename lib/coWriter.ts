@@ -3,10 +3,10 @@ import { models } from "./azureService";
 import { parseGeminiResponse } from "./parser";
 
 export interface CoWriterState {
-  cells: MarkdownCellData[][];
+  notebooks: MarkdownCellData[][]; // renamed from 'cells'
   chatMessages: ChatMessage[];
   isLoading: boolean;
-  slot: number;
+  selectedNotebook: number; // renamed from 'slot'
 }
 
 export type StreamChatFn = (
@@ -17,13 +17,13 @@ export type StreamChatFn = (
 ) => Promise<AsyncGenerator<{ text: string | undefined }>>;
 type StateListener = (state: CoWriterState) => void;
 
-const LOCAL_STORAGE_KEY = "co-writer-notebook-cells";
-const LOCAL_STORAGE_SLOT_KEY = "co-writer-selected-slot";
+const LOCAL_STORAGE_KEY = "co-writer-notebooks";
+const LOCAL_STORAGE_SELECTED_KEY = "co-writer-selected-notebook";
 
-const INITIAL_CELLS: MarkdownCellData[][] = [
+const INITIAL_NOTEBOOKS: MarkdownCellData[][] = [
   [
     {
-      id: crypto.randomUUID(),
+      id: "welcome-cell",
       content: `# Welcome to your Co-Writer Notebook!
 
 This is a collaborative space for you and CoWriter. Here's how it works:
@@ -46,9 +46,6 @@ CoWriter will always be up-to-date with your notes. Try asking it to summarize, 
     { id: "title", content: "*required" },
     { id: "contact", content: "*required" },
   ],
-  [],
-  [],
-  [],
 ];
 
 const INITIAL_MESSAGES: ChatMessage[] = [
@@ -73,32 +70,48 @@ export class CoWriter {
     this.streamChatFn = streamChatFn;
     this.modelName = initialModelName;
     this.state = {
-      cells: this.loadCellsFromStorage(),
+      notebooks: this.loadNotebooksFromStorage(),
       chatMessages: INITIAL_MESSAGES,
       isLoading: false,
-      slot: this.loadSlotFromStorage(),
+      selectedNotebook: this.loadSelectedNotebookFromStorage(),
     };
   }
 
   public setModelName(modelName: keyof typeof models) {
     this.modelName = modelName;
   }
-  public setSlot(slot: number) {
-    this.state.slot = slot;
-    this.saveSlotToStorage();
-  }
-  public updateCellId = (oldId: string, newId: string) => {
-    if (!oldId || !newId || oldId === newId) return;
-    this.setState((prevState) => ({
-      cells: prevState.cells.map((slotCells, slotIndex) =>
-        slotIndex === prevState.slot
-          ? slotCells.map((cell) =>
-              cell.id === oldId ? { ...cell, id: newId } : cell
-            )
-          : slotCells
-      ),
+  public setSelectedNotebook(index: number) {
+    if (index < 0 || index >= this.state.notebooks.length) return;
+    this.setState(() => ({
+      selectedNotebook: index,
     }));
-    this.saveCellsToStorage();
+    this.saveSelectedNotebookToStorage();
+  }
+  public addNotebook = (initialCells: MarkdownCellData[] = []) => {
+    this.setState((prevState) => {
+      const newNotebooks = [...prevState.notebooks, initialCells];
+      return {
+        notebooks: newNotebooks,
+        selectedNotebook: newNotebooks.length - 1,
+      };
+    });
+    this.saveNotebooksToStorage();
+    this.saveSelectedNotebookToStorage();
+  };
+  public removeNotebook = (index: number) => {
+    if (this.state.notebooks.length <= 1) return; // Always keep at least one
+    this.setState((prevState) => {
+      const newNotebooks = prevState.notebooks.filter((_, i) => i !== index);
+      let newSelected = prevState.selectedNotebook;
+      if (newSelected >= newNotebooks.length)
+        newSelected = newNotebooks.length - 1;
+      return {
+        notebooks: newNotebooks,
+        selectedNotebook: newSelected,
+      };
+    });
+    this.saveNotebooksToStorage();
+    this.saveSelectedNotebookToStorage();
   };
   public getState(): CoWriterState {
     return { ...this.state };
@@ -119,52 +132,74 @@ export class CoWriter {
   private setState(
     updater: (prevState: CoWriterState) => Partial<CoWriterState>
   ) {
-    this.state = { ...this.state, ...updater(this.state) };
-    this.notifyListeners();
-  }
-
-  private saveCellsToStorage() {
-    try {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(this.state.cells));
-    } catch (error) {
-      console.error("Failed to save cells to localStorage", error);
+    const prevState = this.state;
+    const nextState = { ...prevState, ...updater(prevState) };
+    // Shallow compare all top-level keys
+    const keys = Object.keys(nextState) as (keyof CoWriterState)[];
+    let changed = false;
+    for (const key of keys) {
+      if (prevState[key] !== nextState[key]) {
+        changed = true;
+        break;
+      }
+    }
+    if (changed) {
+      this.state = nextState;
+      this.notifyListeners();
     }
   }
 
-  private saveSlotToStorage() {
+  private saveNotebooksToStorage() {
     try {
-      localStorage.setItem(LOCAL_STORAGE_SLOT_KEY, String(this.state.slot));
+      localStorage.setItem(
+        LOCAL_STORAGE_KEY,
+        JSON.stringify(this.state.notebooks)
+      );
     } catch (error) {
-      console.error("Failed to save slot to localStorage", error);
+      console.error("Failed to save notebooks to localStorage", error);
     }
   }
-
-  private loadCellsFromStorage(): MarkdownCellData[][] {
+  private saveSelectedNotebookToStorage() {
     try {
-      const savedCells = localStorage.getItem(LOCAL_STORAGE_KEY);
-      if (savedCells) {
-        const parsedCells = JSON.parse(savedCells);
-        if (Array.isArray(parsedCells) && parsedCells.length > 0) {
-          return parsedCells;
+      localStorage.setItem(
+        LOCAL_STORAGE_SELECTED_KEY,
+        String(this.state.selectedNotebook)
+      );
+    } catch (error) {
+      console.error("Failed to save selected notebook to localStorage", error);
+    }
+  }
+  private loadNotebooksFromStorage(): MarkdownCellData[][] {
+    try {
+      const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
         }
       }
     } catch (error) {
-      console.error("Failed to load or parse cells from localStorage", error);
+      console.error(
+        "Failed to load or parse notebooks from localStorage",
+        error
+      );
     }
-    return INITIAL_CELLS;
+    return INITIAL_NOTEBOOKS;
   }
-
-  private loadSlotFromStorage(): number {
+  private loadSelectedNotebookFromStorage(): number {
     try {
-      const savedSlot = localStorage.getItem(LOCAL_STORAGE_SLOT_KEY);
-      if (savedSlot !== null) {
-        const slotNum = Number(savedSlot);
-        if (!isNaN(slotNum) && slotNum >= 0 && slotNum < INITIAL_CELLS.length) {
-          return slotNum;
+      const saved = localStorage.getItem(LOCAL_STORAGE_SELECTED_KEY);
+      if (saved !== null) {
+        const idx = Number(saved);
+        if (!isNaN(idx) && idx >= 0) {
+          return idx;
         }
       }
     } catch (error) {
-      console.error("Failed to load slot from localStorage", error);
+      console.error(
+        "Failed to load selected notebook from localStorage",
+        error
+      );
     }
     return 0;
   }
@@ -172,69 +207,73 @@ export class CoWriter {
   public addCell = (content: string = ""): string => {
     const newCell: MarkdownCellData = { id: crypto.randomUUID(), content };
     this.setState((prevState) => ({
-      cells: prevState.cells.map((slotCells, slotIndex) =>
-        slotIndex === prevState.slot ? [...slotCells, newCell] : slotCells
+      notebooks: prevState.notebooks.map((cells, idx) =>
+        idx === prevState.selectedNotebook ? [...cells, newCell] : cells
       ),
     }));
-    this.saveCellsToStorage();
+    this.saveNotebooksToStorage();
     return newCell.id;
   };
-
   public deleteCell = (id: string) => {
     this.setState((prevState) => ({
-      cells: prevState.cells.map((slotCells, slotIndex) =>
-        slotIndex === prevState.slot
-          ? slotCells.filter((cell) => cell.id !== id)
-          : slotCells
+      notebooks: prevState.notebooks.map((cells, idx) =>
+        idx === prevState.selectedNotebook
+          ? cells.filter((cell) => cell.id !== id)
+          : cells
       ),
     }));
-    this.saveCellsToStorage();
+    this.saveNotebooksToStorage();
   };
-
   public updateCell = (id: string, content: string) => {
     this.setState((prevState) => ({
-      cells: prevState.cells.map((slotCells, slotIndex) =>
-        slotIndex === prevState.slot
-          ? slotCells.map((cell) =>
-              cell.id === id ? { ...cell, content } : cell
-            )
-          : slotCells
+      notebooks: prevState.notebooks.map((cells, idx) =>
+        idx === prevState.selectedNotebook
+          ? cells.map((cell) => (cell.id === id ? { ...cell, content } : cell))
+          : cells
       ),
     }));
-    this.saveCellsToStorage();
+    this.saveNotebooksToStorage();
+  };
+  public updateCellId = (oldId: string, newId: string) => {
+    if (!oldId || !newId || oldId === newId) return;
+    this.setState((prevState) => ({
+      notebooks: prevState.notebooks.map((cells, idx) =>
+        idx === prevState.selectedNotebook
+          ? cells.map((cell) =>
+              cell.id === oldId ? { ...cell, id: newId } : cell
+            )
+          : cells
+      ),
+    }));
+    this.saveNotebooksToStorage();
   };
 
   public handleSendMessage = async (
     message: string,
     modelNameOverride?: keyof typeof models
   ) => {
-    this.setState(() => ({ isLoading: true }));
-
     const newUserMessage: ChatMessage = {
       id: crypto.randomUUID(),
       role: "user",
       content: message,
     };
-    let currentChatHistory: ChatMessage[];
-
-    this.setState((prevState) => {
-      currentChatHistory = [...prevState.chatMessages, newUserMessage];
-      return { chatMessages: currentChatHistory };
-    });
-
     const modelMessageId = crypto.randomUUID();
-    this.setState((prevState) => ({
-      chatMessages: [
-        ...prevState.chatMessages,
-        { id: modelMessageId, role: "model", content: "" },
-      ],
+    // Build chat history BEFORE setState
+    const currentChatHistory: ChatMessage[] = [
+      ...this.state.chatMessages,
+      newUserMessage,
+      { id: modelMessageId, role: "model", content: "" },
+    ];
+    this.setState(() => ({
+      chatMessages: currentChatHistory,
+      isLoading: true,
     }));
 
     try {
       const modelToUse = modelNameOverride || this.modelName;
       const stream = await this.streamChatFn(
-        currentChatHistory!,
-        this.state.cells[this.state.slot],
+        currentChatHistory,
+        this.state.notebooks[this.state.selectedNotebook],
         this.feedbackForNextPrompt,
         modelToUse
       );
@@ -287,7 +326,7 @@ export class CoWriter {
 
     this.setState((prevState) => {
       let newCellsState: MarkdownCellData[] = [
-        ...prevState.cells[prevState.slot],
+        ...prevState.notebooks[prevState.selectedNotebook],
       ];
       const cellsToUpdate = new Map<string, string>();
       const cellsToAdd: MarkdownCellData[] = [];
@@ -317,19 +356,19 @@ export class CoWriter {
 
       newCellsState.push(...cellsToAdd);
 
-      const newCells = prevState.cells.map((slotCells, idx) =>
-        idx === prevState.slot ? newCellsState : slotCells
+      const newNotebooks = prevState.notebooks.map((cells, idx) =>
+        idx === prevState.selectedNotebook ? newCellsState : cells
       );
 
       return {
-        cells: newCells,
+        notebooks: newNotebooks,
         chatMessages: prevState.chatMessages.map((msg) =>
           msg.id === messageId ? { ...msg, reviewDecision: "applied" } : msg
         ),
       };
     });
 
-    this.saveCellsToStorage();
+    this.saveNotebooksToStorage();
     this.feedbackForNextPrompt = `[User feedback: The previous changes were applied.]`;
   };
 
