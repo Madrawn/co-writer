@@ -32,13 +32,19 @@
     },
     "incremental": true,
     "esModuleInterop": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ]
   },
   "include": [
-    "next-env.d.ts",
-    "css.d.ts",
     "**/*.ts",
-    "**/*.tsx"
+    "**/*.tsx",
+    "css.d.ts",
+    "next-env.d.ts",
+    ".next/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"
