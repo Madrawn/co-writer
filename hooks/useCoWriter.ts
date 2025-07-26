@@ -65,8 +65,8 @@ export const useCoWriter = (
     prevIsLoadingRef.current = isLoading;
   }, [isLoading, chatMessages, ttsEnabled]);
 
-  const addCell = useCallback(() => {
-    const newCellId = coreAddCell();
+  const addCell = useCallback((content="", id=crypto.randomUUID()) => {
+    const newCellId = coreAddCell(content, id);
     setEditingCellId(newCellId);
   }, [coreAddCell]);
 

@@ -204,8 +204,8 @@ export class CoWriter {
     return 0;
   }
 
-  public addCell = (content: string = ""): string => {
-    const newCell: MarkdownCellData = { id: crypto.randomUUID(), content };
+  public addCell = (content: string = "", id = crypto.randomUUID()): string => {
+    const newCell: MarkdownCellData = { id, content };
     this.setState((prevState) => ({
       notebooks: prevState.notebooks.map((cells, idx) =>
         idx === prevState.selectedNotebook ? [...cells, newCell] : cells
@@ -272,7 +272,7 @@ export class CoWriter {
     try {
       const modelToUse = modelNameOverride || this.modelName;
       const stream = await this.streamChatFn(
-        currentChatHistory,
+        currentChatHistory.slice(0, -1),
         this.state.notebooks[this.state.selectedNotebook],
         this.feedbackForNextPrompt,
         modelToUse
