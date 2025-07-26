@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { ReactElement } from "react";
 import MarkdownCell from "../components/MarkdownCell";
 import ChatPanel from "../components/ChatPanel";
 import { PlusIcon, ChevronDownIcon } from "../components/icons"; // Add ChevronDownIcon
@@ -7,7 +7,7 @@ import { useCoWriter } from "../hooks/useCoWriter";
 import { models } from "../lib/azureService";
 import { SettingsHeader } from "../components/SettingsHeader";
 
-export default function HomePage(): React.Component {
+export default function HomePage(): ReactElement {
   // Import models from azureService
   // @ts-ignore
   // eslint-disable-next-line
@@ -41,16 +41,16 @@ export default function HomePage(): React.Component {
   const handleInsertFiles = async (isFolder = false) => {
     try {
       let files = [];
-      
+
       if (isFolder) {
         const dirHandle = await window.showDirectoryPicker();
         files = await traverseDirectory(dirHandle);
       } else {
         const fileHandles = await window.showOpenFilePicker({ multiple: true });
         files = await Promise.all(
-          fileHandles.map(async handle => ({
+          fileHandles.map(async (handle) => ({
             file: await handle.getFile(),
-            path: handle.name
+            path: handle.name,
           }))
         );
       }
@@ -60,21 +60,21 @@ export default function HomePage(): React.Component {
         addCell(`\`\`\`\n${content}\n\`\`\``, path); // Assumes addCell now accepts content and id
       }
     } catch (error) {
-      console.error('Error selecting files:', error);
+      console.error("Error selecting files:", error);
     }
   };
 
-  const traverseDirectory = async (dirHandle, path = '') => {
+  const traverseDirectory = async (dirHandle, path = "") => {
     const files = [];
     for await (const entry of dirHandle.values()) {
       const entryPath = `${path}/${entry.name}`;
-      if (entry.kind === 'file') {
+      if (entry.kind === "file") {
         files.push({
           file: await entry.getFile(),
-          path: entryPath.substring(1) // Remove leading slash
+          path: entryPath.substring(1), // Remove leading slash
         });
-      } else if (entry.kind === 'directory') {
-        files.push(...await traverseDirectory(entry, entryPath));
+      } else if (entry.kind === "directory") {
+        files.push(...(await traverseDirectory(entry, entryPath)));
       }
     }
     return files;
@@ -127,7 +127,7 @@ export default function HomePage(): React.Component {
                   <ChevronDownIcon className="w-5 h-5" />
                 </button>
               </div>
-              
+
               {menuOpen && (
                 <div className="absolute right-0 mt-2 w-48 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-10">
                   <button
