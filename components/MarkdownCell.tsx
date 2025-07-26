@@ -53,6 +53,7 @@ const MarkdownCell: React.FC<MarkdownCellProps> = ({
           onBlur={(e) => onStopEditing(cell.id, e.currentTarget.innerText)}
           role="textbox"
           aria-multiline="true"
+          title="Edit cell content"
           className="w-full min-h-[5rem] bg-transparent text-gray-200 focus:outline-none whitespace-pre-wrap"
         >
           {cell.content}
