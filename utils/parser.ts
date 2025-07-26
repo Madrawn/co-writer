@@ -9,7 +9,7 @@ export function parseGeminiResponse(responseText: string): {
   const proposedChanges: ProposedChange[] = [];
   const cleanContent = responseText.replace(
     CHANGE_BLOCK_REGEX,
-    (match, targetCellId, newContent) => {
+    (_, targetCellId, newContent) => {
       proposedChanges.push({
         targetCellId: targetCellId.trim(),
         newContent: newContent.trim(),
