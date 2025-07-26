@@ -43,12 +43,16 @@ export default function HomePage(): ReactElement {
       let files = [];
 
       if (isFolder) {
-        const dirHandle = await window.showDirectoryPicker();
+        const dirHandle: FileSystemDirectoryHandle = await (
+          window as any
+        ).showDirectoryPicker();
         files = await traverseDirectory(dirHandle);
       } else {
-        const fileHandles = await window.showOpenFilePicker({ multiple: true });
+        const fileHandles: FileSystemFileHandle[] = await (
+          window as any
+        ).showOpenFilePicker({ multiple: true });
         files = await Promise.all(
-          fileHandles.map(async (handle) => ({
+          fileHandles.map(async (handle: FileSystemFileHandle) => ({
             file: await handle.getFile(),
             path: handle.name,
           }))
@@ -64,8 +68,11 @@ export default function HomePage(): ReactElement {
     }
   };
 
-  const traverseDirectory = async (dirHandle, path = "") => {
-    const files = [];
+  const traverseDirectory = async (
+    dirHandle: FileSystemDirectoryHandle,
+    path: string = ""
+  ): Promise<{ file: File; path: string }[]> => {
+    const files: { file: File; path: string }[] = [];
     for await (const entry of dirHandle.values()) {
       const entryPath = `${path}/${entry.name}`;
       if (entry.kind === "file") {
@@ -114,13 +121,14 @@ export default function HomePage(): ReactElement {
             <div className="relative">
               <div className="flex">
                 <button
-                  onClick={addCell}
+                  onClick={() => addCell()}
                   className="flex-1 flex items-center justify-center p-3 border-2 border-dashed border-gray-600 rounded-l-lg text-gray-400 hover:border-gray-500 hover:text-gray-300 transition-all"
                 >
                   <PlusIcon className="w-5 h-5 mr-2" />
                   Add Cell
                 </button>
                 <button
+                  title="Add cell Menu"
                   onClick={() => setMenuOpen(!menuOpen)}
                   className="p-3 border-t-2 border-b-2 border-r-2 border-dashed border-gray-600 rounded-r-lg text-gray-400 hover:border-gray-500 hover:text-gray-300 transition-all"
                 >
