@@ -73,6 +73,7 @@ export default function HomePage(): ReactElement {
     path: string = ""
   ): Promise<{ file: File; path: string }[]> => {
     const files: { file: File; path: string }[] = [];
+    // @ts-expect-error: TypeScript does not recognize values() on FileSystemDirectoryHandle, but it exists in browsers
     for await (const entry of dirHandle.values()) {
       const entryPath = `${path}/${entry.name}`;
       if (entry.kind === "file") {
