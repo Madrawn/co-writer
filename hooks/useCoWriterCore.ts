@@ -7,7 +7,7 @@ import { models } from '@/lib/azureService';
 // A single, shared instance of the CoWriter class
 let coWriterInstance: CoWriter | null = null;
 
-export const useCoWriterCore = (modelName: keyof typeof models, selectedSlot: number) => {
+export const useCoWriterCore = (modelName: keyof typeof models, selectedNotebook: number) => {
   const [state, setState] = useState<CoWriterState>(() => {
     if (!coWriterInstance) {
       coWriterInstance = new CoWriter(streamChatResponse, modelName);
@@ -26,13 +26,18 @@ export const useCoWriterCore = (modelName: keyof typeof models, selectedSlot: nu
   }, [modelName]);
 
   useEffect(() => {
-    coWriterInstance!.setSlot(selectedSlot);
-  }, [selectedSlot]);
+    coWriterInstance!.setSelectedNotebook(selectedNotebook);
+  }, [selectedNotebook]);
 
   return {
-    cells: state.cells[selectedSlot] || [],
+    notebooks: state.notebooks,
+    selectedNotebook: state.selectedNotebook,
+    cells: state.notebooks[state.selectedNotebook] || [],
     chatMessages: state.chatMessages,
     isLoading: state.isLoading,
+    addNotebook: coWriterInstance!.addNotebook,
+    removeNotebook: coWriterInstance!.removeNotebook,
+    setSelectedNotebook: coWriterInstance!.setSelectedNotebook.bind(coWriterInstance),
     addCell: coWriterInstance!.addCell,
     deleteCell: coWriterInstance!.deleteCell,
     updateCell: coWriterInstance!.updateCell,

@@ -1,3 +1,4 @@
+"use client"
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { speakTextInChunks } from '../lib/azureTTSService'; // Updated import
 import { useCoWriterCore } from './useCoWriterCore';
@@ -5,13 +6,18 @@ import { models } from '@/lib/azureService';
 
 export const useCoWriter = (
   modelName: keyof typeof models,
-  selectedSlot: number,
+  selectedNotebook: number,
   ttsEnabled: boolean = true
 ) => {
   const {
+    notebooks,
+    selectedNotebook: currentNotebook,
     cells,
     chatMessages,
     isLoading,
+    addNotebook,
+    removeNotebook,
+    setSelectedNotebook,
     addCell: coreAddCell,
     deleteCell,
     updateCell,
@@ -19,7 +25,7 @@ export const useCoWriter = (
     handleSendMessage,
     handleApplyChanges,
     handleRejectChanges,
-  } = useCoWriterCore(modelName, selectedSlot);
+  } = useCoWriterCore(modelName, selectedNotebook);
   const handleUpdateCellId = useCallback((oldId: string, newId: string) => {
     updateCellId(oldId, newId);
   }, [updateCellId]);
@@ -74,11 +80,16 @@ export const useCoWriter = (
   }, [updateCell]);
 
   return {
+    notebooks,
+    selectedNotebook: currentNotebook,
     cells,
     editingCellId,
     chatMessages,
     isLoading,
     highlightedCellId,
+    addNotebook,
+    removeNotebook,
+    setSelectedNotebook,
     addCell,
     deleteCell,
     startEditingCell,
