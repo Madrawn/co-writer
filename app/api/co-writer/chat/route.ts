@@ -1,20 +1,13 @@
-// pages/api/co-writer/chat.ts
-import type { NextApiResponse } from 'next';
 import ModelClient from "@azure-rest/ai-inference";
 import { AzureKeyCredential } from "@azure/core-auth";
-import { buildPrompt } from '../../../lib/promptBuilder';
-import { NextResponse } from 'next/dist/server/web/spec-extension/response';
-import { NextRequest } from 'next/server';
+import { buildPrompt } from '../../../../lib/promptBuilder';
+import { NextResponse } from 'next/server';
+
 export const runtime = 'edge'; // Enable Edge Runtime
 
-export default async function handler(req: NextRequest, res: NextApiResponse) {
-    if (req.method !== 'POST') {
-        return res.status(405).json({ error: 'Method not allowed' });
-    }
-
+export async function POST(req: Request) {
     try {
-        // Parse the request body
-        const requestBody = await req.json(); // Use req.json() to parse
+        const requestBody = await req.json();
         const {
             historyWithNewMessage,
             cells,
@@ -22,17 +15,14 @@ export default async function handler(req: NextRequest, res: NextApiResponse) {
             modelName
         } = requestBody;
 
-
-        // Validate environment variables
         const endpoint = process.env.AZURE_ENDPOINT;
         const endpoint_oa = process.env.AZURE_OPENAI_ENDPOINT;
         const apiKey = process.env.AZURE_API_KEY;
 
         if (!apiKey || !endpoint || !endpoint_oa) {
-            return res.status(500).json({ error: 'Azure configuration missing' });
+            return NextResponse.json({ error: 'Azure configuration missing' }, { status: 500 });
         }
 
-        // Initialize Azure client
         const options = { apiVersion: "2024-12-01-preview" };
         const models = {
             "DeepSeek-R1-0528": ModelClient(endpoint, new AzureKeyCredential(apiKey), { apiVersion: "2024-05-01-preview" }),
@@ -61,41 +51,31 @@ export default async function handler(req: NextRequest, res: NextApiResponse) {
                 }
             }).asBrowserStream();
 
-            // Check if the response is successful
             if (azureResponse.status !== "200") {
                 console.error("Azure API error:", azureResponse);
                 return new NextResponse('Error from Azure API', { status: 500 });
             }
 
-            // Get the ReadableStream from the Azure response
             const stream = azureResponse.body;
 
             if (!stream) {
                 throw new Error("Response stream is undefined");
             }
 
-            // Create SSE stream from the response stream
-            // const sseStream = createSseStream(stream);
-
-            // Set up streaming response headers
             const headers = {
-                // 'Content-Type': 'application/octet-stream',
-                'Content-Type': 'text/event-stream', // Crucial for SSE
+                'Content-Type': 'text/event-stream',
                 'Cache-Control': 'no-cache',
                 'Connection': 'keep-alive',
             };
 
-
-            // Return the SSE stream as the response
             return new NextResponse(stream, { headers });
 
         } catch (error) {
             console.error("Azure API error:", error);
-            console.error('Error forwarding stream:', error);
             return new NextResponse('Error forwarding stream', { status: 500 });
         }
     } catch (error) {
         console.error("Request parsing error:", error);
-        return res.status(400).json({ error: 'Invalid request body' }); // Handle parsing errors
+        return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
     }
 }
