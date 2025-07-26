@@ -28,6 +28,13 @@ To **add** a new cell at the end of the notebook, use:
 {new_markdown_content}
 ---CELL---
 
+You can also choose to specify a new ID for the cell by replacing "new" with your desired ID. Use this for example for files that are not yet created, like:
+---CELL:example.py---
+\`\`\` python
+{new_code_content}
+\`\`\`
+---CELL---
+
 Any text outside of these special blocks will be treated as your regular chat response. For example:
 "Sure, I've updated the cell with a numbered list for you.
 
