@@ -1,6 +1,6 @@
 import type { ProposedChange } from '../types';
 
-const CHANGE_BLOCK_REGEX = /---CELL:(.*?)---\r?\n([\s\S]*?)\r?\n---CELL---/g;
+const CHANGE_BLOCK_REGEX = /^[ \t]*---CELL:(.*?)---[ \t]*\r?\n([\s\S]*?)[ \t]*\r?\n[ \t]*---CELL---[ \t]*(?:\r?\n)*/gm;
 
 export function parseGeminiResponse(responseText: string): {
   cleanContent: string;
