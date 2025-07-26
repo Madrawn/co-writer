@@ -101,6 +101,8 @@ const MarkdownCell: React.FC<MarkdownCellProps> = ({
                 }
               }}
               className="bg-gray-900 text-gray-200 border border-gray-700 rounded px-1 py-0.5 text-xs w-28"
+              placeholder="Enter cell ID"
+              title="Edit cell ID"
             />
           ) : (
             <span
@@ -169,6 +171,8 @@ const MarkdownCell: React.FC<MarkdownCellProps> = ({
               }
             }}
             className="bg-gray-900 text-gray-200 border border-gray-700 rounded px-1 py-0.5 text-xs w-28"
+            placeholder="Enter cell ID"
+            title="Edit cell ID"
           />
         ) : (
           <span
