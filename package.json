@@ -13,7 +13,6 @@
     "@azure/core-sse": "latest",
     "@azure/identity": "latest",
     "@google/genai": "^1.11.0",
-    "@tailwindcss/postcss": "^4.1.11",
     "next": "^15.4.3",
     "openai": "latest",
     "react": "^19.1.0",
@@ -22,6 +21,8 @@
     "remark-gfm": "^4.0.1"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.11",
+    "@tailwindcss/typography": "^0.5.16",
     "@types/node": "^22.16.5",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",

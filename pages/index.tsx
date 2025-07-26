@@ -4,7 +4,6 @@ import ChatPanel from '../components/ChatPanel';
 import { PlusIcon } from '../components/icons';
 import { useCoWriter } from '../hooks/useCoWriter';
 import { models } from '../lib/azureService';
-import Head from 'next/head';
 
 const IndexPage: React.FC = () => {
     // Import models from azureService
@@ -12,6 +11,7 @@ const IndexPage: React.FC = () => {
     // eslint-disable-next-line
     const [selectedModel, setSelectedModel] = React.useState(Object.keys(models)[0] as keyof typeof models);
     const [selectedSlot, setSelectedSlot] = React.useState(0);
+    const [ttsEnabled, setTtsEnabled] = React.useState(true);
     const {
         cells,
         editingCellId,
@@ -27,7 +27,8 @@ const IndexPage: React.FC = () => {
         handleRejectChanges,
         setHighlightedCellId,
         handleUpdateCellId,
-    } = useCoWriter(selectedModel, selectedSlot);
+        isTtsSpeaking,
+    } = useCoWriter(selectedModel, selectedSlot, ttsEnabled);
 
     return (
         <>
@@ -91,7 +92,7 @@ const IndexPage: React.FC = () => {
                 </main >
 
                 {/* Side Panel: Chat */}
-                < aside className="w-[450px] flex-shrink-0 h-full" >
+                <aside className="w-[450px] flex-shrink-0 h-full">
                     <ChatPanel
                         messages={chatMessages}
                         onSendMessage={handleSendMessage}
@@ -100,8 +101,11 @@ const IndexPage: React.FC = () => {
                         onRejectChanges={handleRejectChanges}
                         onHighlightCell={setHighlightedCellId}
                         modelName={selectedModel}
+                        isTtsSpeaking={isTtsSpeaking}
+                        ttsEnabled={ttsEnabled}
+                        onToggleTts={setTtsEnabled}
                     />
-                </aside >
+                </aside>
             </div >
         </>
     );
