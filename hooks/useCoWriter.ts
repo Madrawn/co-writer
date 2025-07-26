@@ -3,7 +3,11 @@ import { speakTextInChunks } from '../lib/azureTTSService'; // Updated import
 import { useCoWriterCore } from './useCoWriterCore';
 import { models } from '@/lib/azureService';
 
-export const useCoWriter = (modelName: keyof typeof models, selectedSlot: number) => {
+export const useCoWriter = (
+  modelName: keyof typeof models,
+  selectedSlot: number,
+  ttsEnabled: boolean = true
+) => {
   const {
     cells,
     chatMessages,
@@ -39,14 +43,13 @@ export const useCoWriter = (modelName: keyof typeof models, selectedSlot: number
   const prevIsLoadingRef = useRef<boolean>(isLoading);
   useEffect(() => {
     // Only run when isLoading transitions from true to false
-    if (prevIsLoadingRef.current && !isLoading) {
+    if (prevIsLoadingRef.current && !isLoading && ttsEnabled) {
       if (!chatMessages || chatMessages.length === 0) return;
       // Find the last model message with content
       const lastModelMsg = [...chatMessages].reverse().find(m => m.role === 'model' && m.content);
       if (lastModelMsg && lastSpokenIdRef.current !== lastModelMsg.id) {
         lastSpokenIdRef.current = lastModelMsg.id;
         const textToSpeak = lastModelMsg.cleanContent || lastModelMsg.content;
-        
         // Use chunked TTS instead of single request
         speakTextInChunks(textToSpeak).catch((err) => {
           console.error('Azure TTS error:', err);
@@ -54,7 +57,7 @@ export const useCoWriter = (modelName: keyof typeof models, selectedSlot: number
       }
     }
     prevIsLoadingRef.current = isLoading;
-  }, [isLoading, chatMessages]);
+  }, [isLoading, chatMessages, ttsEnabled]);
 
   const addCell = useCallback(() => {
     const newCellId = coreAddCell();
@@ -85,5 +88,6 @@ export const useCoWriter = (modelName: keyof typeof models, selectedSlot: number
     handleRejectChanges,
     setHighlightedCellId,
     handleUpdateCellId,
+    isTtsSpeaking: false, // Placeholder for TTS speaking state
   };
 };

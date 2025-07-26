@@ -48,9 +48,9 @@ export async function speakTextInChunks(
   const sentences = text.split(/(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?|\!)\s+/g);
   const chunks: string[] = [];
   
-  // Group sentences into chunks (4 sentences per chunk)
-  for (let i = 0; i < sentences.length; i += 4) {
-    chunks.push(sentences.slice(i, i + 4).join(' '));
+  // Group sentences into chunks (3 sentences per chunk)
+  for (let i = 0; i < sentences.length; i += 3) {
+    chunks.push(sentences.slice(i, i + 3).join(' '));
   }
 
   const audioQueue: {index: number, blob: Blob}[] = [];

@@ -14,6 +14,8 @@ interface ChatPanelProps {
   onHighlightCell: (cellId: string | null) => void;
   modelName: string;
   isTtsSpeaking: boolean; // NEW: Added prop for TTS state
+  ttsEnabled: boolean; // NEW: TTS toggle state
+  onToggleTts: (enabled: boolean) => void; // NEW: TTS toggle handler
 }
 
 const ChatPanel: React.FC<ChatPanelProps> = ({
@@ -25,6 +27,8 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
   onHighlightCell,
   modelName,
   isTtsSpeaking, // NEW: Added prop for TTS state
+  ttsEnabled,
+  onToggleTts,
 }) => {
   const [input, setInput] = useState('');
   const [isListening, setIsListening] = useState(false);
@@ -250,15 +254,27 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
       {/* Show selected model and language in chat panel header */}
       <div className="px-6 pt-4 pb-2 text-gray-300 text-sm font-semibold flex items-center justify-between">
         <span>Model: {modelName}</span>
-        <button
-          type="button"
-          onClick={toggleSpeechLang}
-          disabled={isListening}
-          className={`ml-4 px-2 py-1 rounded text-xs font-medium border ${!isListening ? 'text-gray-400 border-gray-500 hover:text-white hover:border-white' : 'text-gray-500 border-gray-700 cursor-not-allowed'}`}
-          title={`Switch to ${speechLang === 'en-US' ? 'German' : 'English'} (Speech)`}
-        >
-          {speechLang === 'en-US' ? 'EN' : 'DE'}
-        </button>
+        <div className="flex items-center space-x-2">
+          {/* TTS Toggle Button */}
+          <button
+            type="button"
+            onClick={() => onToggleTts(!ttsEnabled)}
+            className={`px-2 py-1 rounded text-xs font-medium border ${ttsEnabled ? 'text-green-400 border-green-500 bg-green-900/30' : 'text-gray-400 border-gray-500 hover:text-white hover:border-white'}`}
+            title={ttsEnabled ? 'Disable Text-to-Speech' : 'Enable Text-to-Speech'}
+          >
+            {ttsEnabled ? 'TTS On' : 'TTS Off'}
+          </button>
+          {/* Language Selector */}
+          <button
+            type="button"
+            onClick={toggleSpeechLang}
+            disabled={isListening}
+            className={`ml-2 px-2 py-1 rounded text-xs font-medium border ${!isListening ? 'text-gray-400 border-gray-500 hover:text-white hover:border-white' : 'text-gray-500 border-gray-700 cursor-not-allowed'}`}
+            title={`Switch to ${speechLang === 'en-US' ? 'German' : 'English'} (Speech)`}
+          >
+            {speechLang === 'en-US' ? 'EN' : 'DE'}
+          </button>
+        </div>
       </div>
       <div className="flex-1 p-6 overflow-y-auto space-y-4">
         {messages.map((msg) => {
