@@ -5,7 +5,7 @@ export interface MarkdownCellData {
   content: string;
 }
 
-export type MessageRole = 'user' | 'model';
+export type MessageRole = "user" | "model";
 
 export interface ProposedChange {
   targetCellId: string; // 'new' or an existing cell ID
@@ -13,7 +13,7 @@ export interface ProposedChange {
 }
 
 export interface ChatMessage {
-  id:string;
+  id: string;
   role: MessageRole;
   content: string;
   // The content without the ---CELL--- blocks
@@ -21,18 +21,19 @@ export interface ChatMessage {
   // Code changes proposed by the model
   proposedChanges?: ProposedChange[];
   // Tracks the user's decision on the proposed changes
-  reviewDecision?: 'applied' | 'rejected';
+  reviewDecision?: "applied" | "rejected";
 }
 export type StreamChatFn = (
   historyWithNewMessage: ChatMessage[],
   cells: MarkdownCellData[],
   feedback: string | null,
   modelName: keyof typeof models
-) => Promise<AsyncGenerator<{ text: string | undefined; }>>;export interface CoWriterState {
+) => Promise<AsyncGenerator<{ text: string | undefined }>>;
+
+export interface CoWriterState {
   notebooks: MarkdownCellData[][]; // renamed from 'cells'
   chatMessages: ChatMessage[];
   isLoading: boolean;
   selectedNotebook: number; // renamed from 'slot'
 }
 export type StateListener = (state: CoWriterState) => void;
-
