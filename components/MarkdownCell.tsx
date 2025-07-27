@@ -5,6 +5,7 @@ import remarkGfm from "remark-gfm";
 
 import { TrashIcon, PencilIcon } from "./icons";
 import { MarkdownCellData } from "@/types";
+import { CellIdLabel } from "./CellIdLabel";
 
 export interface MarkdownCellProps {
   cell: MarkdownCellData;
@@ -14,75 +15,6 @@ export interface MarkdownCellProps {
   onStopEditing: (id: string, newContent: string) => void;
   onDelete: (id: string) => void;
   onUpdateCellId: (oldId: string, newId: string) => void;
-}
-
-interface CellIdLabelProps {
-  editingId: boolean;
-  setEditingId: React.Dispatch<React.SetStateAction<boolean>>;
-  idInput: string;
-  setIdInput: React.Dispatch<React.SetStateAction<string>>;
-  cell: MarkdownCellData;
-  onUpdateCellId: (oldId: string, newId: string) => void;
-}
-
-function CellIdLabel(props: CellIdLabelProps) {
-  return (
-    <div
-      onClick={(e) => e.stopPropagation()}
-      className="absolute bottom-1 right-2 text-xs text-gray-600"
-    >
-      {props.editingId ? (
-        <input
-          type="text"
-          value={props.idInput}
-          autoFocus
-          onClick={(e) => e.stopPropagation()}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => props.setIdInput(e.target.value)}
-          onBlur={() => {
-            props.setEditingId(false);
-
-            if (props.idInput !== props.cell.id && props.idInput.trim()) {
-              props.onUpdateCellId(props.cell.id, props.idInput.trim());
-            } else {
-              props.setIdInput(props.cell.id);
-            }
-          }}
-          onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
-            if (e.key === "Enter") {
-              props.setEditingId(false);
-
-              if (props.idInput !== props.cell.id && props.idInput.trim()) {
-                props.onUpdateCellId(props.cell.id, props.idInput.trim());
-              } else {
-                props.setIdInput(props.cell.id);
-              }
-            } else if (e.key === "Escape") {
-              props.setEditingId(false);
-              props.setIdInput(props.cell.id);
-            }
-          }}
-          className="bg-gray-900 text-gray-200 border border-gray-700 rounded px-1 py-0.5 text-xs w-28"
-          placeholder="Enter cell ID"
-          title="Edit cell ID"
-        />
-      ) : (
-        <span
-          style={{
-            cursor: "pointer",
-          }}
-          onClick={(e) => e.stopPropagation()}
-          onDoubleClick={(e: React.MouseEvent<HTMLSpanElement, MouseEvent>) => {
-            e.stopPropagation();
-            props.setEditingId(true);
-          }}
-          title="Double-click to edit cell ID"
-          className="pointer-events-auto"
-        >
-          Id: {props.cell.id.split("-")[0]}
-        </span>
-      )}
-    </div>
-  );
 }
 
 const MarkdownCell: React.FC<MarkdownCellProps> = ({
@@ -176,53 +108,14 @@ const MarkdownCell: React.FC<MarkdownCellProps> = ({
       <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex space-x-2">
         <PencilIcon className="w-5 h-5 text-gray-500" />
       </div>
-      <div className="absolute bottom-1 right-2 text-xs text-gray-600 group-hover:text-gray-500 transition-colors">
-        {editingId ? (
-          <input
-            type="text"
-            value={idInput}
-            autoFocus
-            onChange={(e) => setIdInput(e.target.value)}
-            onBlur={() => {
-              setEditingId(false);
-              if (idInput !== cell.id && idInput.trim()) {
-                onUpdateCellId(cell.id, idInput.trim());
-              } else {
-                setIdInput(cell.id);
-              }
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                setEditingId(false);
-                if (idInput !== cell.id && idInput.trim()) {
-                  onUpdateCellId(cell.id, idInput.trim());
-                } else {
-                  setIdInput(cell.id);
-                }
-              } else if (e.key === "Escape") {
-                setEditingId(false);
-                setIdInput(cell.id);
-              }
-            }}
-            className="bg-gray-900 text-gray-200 border border-gray-700 rounded px-1 py-0.5 text-xs w-28"
-            placeholder="Enter cell ID"
-            title="Edit cell ID"
-          />
-        ) : (
-          <span
-            style={{ cursor: "pointer" }}
-            onClick={(e) => e.stopPropagation()}
-            onDoubleClick={(e) => {
-              e.stopPropagation();
-              setEditingId(true);
-            }}
-            title="Double-click to edit cell ID"
-            className="pointer-events-auto"
-          >
-            Id: {cell.id.split("-")[0]}
-          </span>
-        )}
-      </div>
+      <CellIdLabel
+        editingId={editingId}
+        setEditingId={setEditingId}
+        idInput={idInput}
+        setIdInput={setIdInput}
+        cell={cell}
+        onUpdateCellId={onUpdateCellId}
+      ></CellIdLabel>{" "}
     </div>
   );
 };
