@@ -1,6 +1,7 @@
 "use client";
 import { MarkdownCellData } from "@/types";
 import React from "react";
+import "./CellIdLabel.css";
 
 interface CellIdLabelProps {
   editingId: boolean;
@@ -22,7 +23,9 @@ export function CellIdLabel(props: CellIdLabelProps) {
           value={props.idInput}
           autoFocus
           onClick={(e) => e.stopPropagation()}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => props.setIdInput(e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+            props.setIdInput(e.target.value)
+          }
           onBlur={() => {
             props.setEditingId(false);
 
@@ -48,12 +51,10 @@ export function CellIdLabel(props: CellIdLabelProps) {
           }}
           className="bg-gray-900 text-gray-200 border border-gray-700 rounded px-1 py-0.5 text-xs w-28"
           placeholder="Enter cell ID"
-          title="Edit cell ID" />
+          title="Edit cell ID"
+        />
       ) : (
         <span
-          style={{
-            cursor: "pointer",
-          }}
           onClick={(e) => e.stopPropagation()}
           onDoubleClick={(e: React.MouseEvent<HTMLSpanElement, MouseEvent>) => {
             e.stopPropagation();
