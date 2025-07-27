@@ -74,13 +74,13 @@ const MarkdownCell: React.FC<MarkdownCellProps> = ({
       }
     }
     initializeMermaid();
-  }, [isEditing, cell.content]);
+  });
 
   if (isEditing) {
     return (
       <div
         data-testid={cell.id}
-        className="bg-gray-800 border-2 border-blue-500 rounded-lg md:p-4 pt-10 relative group"
+        className="bg-gray-800 border-2 border-blue-500 rounded-lg lg:p-4 pt-10 relative group"
       >
         <div
           ref={editRef}
@@ -122,7 +122,7 @@ const MarkdownCell: React.FC<MarkdownCellProps> = ({
   // If a proposed change exists, show a diff viewer instead of the normal markdown
   if (proposedChange) {
     const baseClasses =
-      "rounded-lg md:p-4 min-h-[5rem] cursor-pointer transition-all duration-300 relative group";
+      "rounded-lg lg:p-4 min-h-[5rem] cursor-pointer transition-all duration-300 relative group";
     const highlightClasses = isHighlighted
       ? "border-2 border-yellow-400 bg-gray-800 shadow-lg shadow-yellow-500/10"
       : "bg-gray-800/70 border border-gray-700 hover:border-blue-500";
@@ -204,7 +204,7 @@ const MarkdownCell: React.FC<MarkdownCellProps> = ({
   }
 
   const baseClasses =
-    "rounded-lg md:p-4 min-h-[5rem] cursor-pointer transition-all duration-300 relative group";
+    "rounded-lg lg:p-4 min-h-[5rem] cursor-pointer transition-all duration-300 relative group";
   const highlightClasses = isHighlighted
     ? "border-2 border-yellow-400 bg-gray-800 shadow-lg shadow-yellow-500/10"
     : "bg-gray-800/70 border border-gray-700 hover:border-blue-500";
@@ -219,7 +219,6 @@ const MarkdownCell: React.FC<MarkdownCellProps> = ({
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}
           rehypePlugins={[rehypeRaw]}
-          
           components={{
             code: ({
               node,

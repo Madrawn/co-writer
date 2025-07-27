@@ -33,7 +33,7 @@ interface MainPanelProps {
 
 function MainPanel(props: MainPanelProps): ReactElement {
   return (
-    <main className="flex-1 h-full overflow-y-auto p-2 md:p-8">
+    <main className="flex-1 h-full overflow-y-auto p-2 lg:p-8">
       <div className="max-w-4xl mx-auto space-y-4">
         <h1 className="text-3xl font-bold text-gray-200 mb-6">
           Co-Writer Notebook
@@ -170,7 +170,7 @@ export default function HomePage(): ReactElement {
 
   return (
     <>
-      <div className="flex flex-col md:flex-row h-screen w-screen bg-gray-900 font-sans">
+      <div className="flex flex-col lg:flex-row h-screen w-screen bg-gray-900 font-sans">
         {/* Main Content: Markdown Notebook */}
         <MainPanel
           selectedModel={selectedModel}
