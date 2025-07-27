@@ -74,10 +74,15 @@ export default function HomePage(): ReactElement {
               selectedNotebook={selectedNotebook}
             ></SettingsHeader>
             {cells.map((cell) => {
-              // Find a proposed change for this cell (if any)
-              const proposedChange = chatMessages
-                .flatMap((msg) => msg.proposedChanges || [])
-                .find((change) => change.targetCellId === cell.id)?.newContent;
+              // Find the first message with a proposed change for this cell and no reviewDecision
+              const msgWithChange = chatMessages.find(
+                (msg) =>
+                  !msg.reviewDecision &&
+                  msg.proposedChanges?.some((change) => change.targetCellId === cell.id)
+              );
+              const proposedChange = msgWithChange?.proposedChanges?.find(
+                (change) => change.targetCellId === cell.id
+              )?.newContent;
               return (
                 <MarkdownCell
                   key={cell.id}

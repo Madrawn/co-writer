@@ -37,6 +37,7 @@ const MarkdownCell: React.FC<MarkdownCellProps> = ({
   const [editingId, setEditingId] = useState(false);
   const [idInput, setIdInput] = useState(cell.id);
   const editRef = useRef<HTMLDivElement>(null);
+  const [splitView, setSplitView] = useState(false);
 
   useEffect(() => {
     if (isEditing && editRef.current) {
@@ -125,33 +126,63 @@ const MarkdownCell: React.FC<MarkdownCellProps> = ({
     const highlightClasses = isHighlighted
       ? "border-2 border-yellow-400 bg-gray-800 shadow-lg shadow-yellow-500/10"
       : "bg-gray-800/70 border border-gray-700 hover:border-blue-500";
-    // Syntax highlighting for code blocks in diff
-    const highlightSyntax = (str: string) => (
-      <SyntaxHighlighter
-        style={vscDarkPlus}
-        language="markdown"
-        PreTag="div"
-        customStyle={{ display: "inline", background: "none", padding: 0 }}
-      >
-        {str}
-      </SyntaxHighlighter>
-    );
+    // Stateful syntax highlighter for code blocks in diff
+    const makeHighlightSyntax = () => {
+      let lang: string | null = null;
+      let inside = false;
+      return (line: string) => {
+        // Detect code block start: ```lang
+        const codeBlockStart = line.match(/^```([a-zA-Z0-9]*)/);
+        if (codeBlockStart) {
+          lang = codeBlockStart[1] || "";
+          inside = true;
+          // Render the code block marker as plain text
+          return <span style={{ opacity: 0.5 }}>{line}</span>;
+        }
+        // Detect code block end: ```
+        if (inside && line.trim() === "```") {
+          lang = null;
+          inside = false;
+          return <span style={{ opacity: 0.5 }}>{line}</span>;
+        }
+        // If inside a code block, highlight with the detected language
+        if (inside && lang) {
+          return (
+            <SyntaxHighlighter
+              style={vscDarkPlus}
+              language={lang}
+              customStyle={{ display: "inline", background: "none", padding: 0 }}
+              PreTag="span"
+            >
+              {line}
+            </SyntaxHighlighter>
+          );
+        }
+        // Otherwise, render as plain text
+        return <span>{line}</span>;
+      };
+    };
+    const highlightSyntax = makeHighlightSyntax();
     return (
       <div
         data-testid={cell.id}
         className={`${baseClasses} ${highlightClasses}`}
       >
+        <div className="flex justify-end mb-2">
+          <button
+            onClick={() => setSplitView((v) => !v)}
+            className="px-2 py-1 text-xs rounded bg-gray-700 text-gray-200 hover:bg-gray-600 border border-gray-600"
+            title={splitView ? "Show Inline Diff" : "Show Side-by-Side Diff"}
+          >
+            {splitView ? "Side-by-Side" : "Inline"}
+          </button>
+        </div>
         <ReactDiffViewer
           oldValue={cell.content}
           newValue={proposedChange}
-          splitView={true}
+          splitView={splitView}
           renderContent={highlightSyntax}
-          styles={{
-            diffContainer: { background: "transparent" },
-            line: { background: "none" },
-            gutter: { background: "none" },
-            contentText: { fontFamily: "inherit" },
-          }}
+          useDarkTheme={true}
         />
         <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex space-x-2">
           <PencilIcon className="w-5 h-5 text-gray-500" />
