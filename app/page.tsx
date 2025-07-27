@@ -45,7 +45,8 @@ export default function HomePage(): ReactElement {
 
       for (const { file, path } of files) {
         const content = await file.text();
-        addCell(`\`\`\`\n${content}\n\`\`\``, path); // Assumes addCell now accepts content and id
+        const extension = file.name.split('.').pop()?.toLowerCase();
+        addCell(`\`\`\`${extension}\n${content}\n\`\`\``, path); // Assumes addCell now accepts content and id
       }
     } catch (error) {
       console.error("Error selecting files:", error);
