@@ -25,6 +25,7 @@ export const useCoWriter = (
     handleSendMessage,
     handleApplyChanges,
     handleRejectChanges,
+    clearChatMessages,
   } = useCoWriterCore(modelName, selectedNotebook);
   const handleUpdateCellId = useCallback((oldId: string, newId: string) => {
     updateCellId(oldId, newId);
@@ -100,5 +101,6 @@ export const useCoWriter = (
     setHighlightedCellId,
     handleUpdateCellId,
     isTtsSpeaking: false, // Placeholder for TTS speaking state
+    clearChatMessages,
   };
 };

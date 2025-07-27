@@ -17,6 +17,7 @@ interface ChatPanelProps {
   isTtsSpeaking: boolean; // NEW: Added prop for TTS state
   ttsEnabled: boolean; // NEW: TTS toggle state
   onToggleTts: (enabled: boolean) => void; // NEW: TTS toggle handler
+  onClearMessages: () => void; // NEW: Clear chat handler
 }
 
 const ChatPanel: React.FC<ChatPanelProps> = ({
@@ -30,6 +31,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
   isTtsSpeaking, // NEW: Added prop for TTS state
   ttsEnabled,
   onToggleTts,
+  onClearMessages,
 }) => {
   const [input, setInput] = useState("");
   const [isListening, setIsListening] = useState(false);
@@ -300,6 +302,16 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
             } (Speech)`}
           >
             {speechLang === "en-US" ? "EN" : "DE"}
+          </button>
+          {/* Clear Chat Button */}
+          <button
+            type="button"
+            onClick={onClearMessages}
+            className="ml-2 px-2 py-1 rounded text-xs font-medium border text-red-400 border-red-500 hover:bg-red-900/30"
+            title="Clear chat messages"
+            disabled={messages.length === 0}
+          >
+            Clear
           </button>
         </div>
       </div>

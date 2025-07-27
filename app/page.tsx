@@ -37,6 +37,7 @@ export default function HomePage(): ReactElement {
     setHighlightedCellId,
     handleUpdateCellId,
     isTtsSpeaking,
+    clearChatMessages,
   } = useCoWriter(selectedModel, 0, ttsEnabled);
   const [menuOpen, setMenuOpen] = React.useState(false);
   const handleInsertFiles = async (isFolder = false) => {
@@ -45,7 +46,7 @@ export default function HomePage(): ReactElement {
 
       for (const { file, path } of files) {
         const content = await file.text();
-        const extension = file.name.split('.').pop()?.toLowerCase();
+        const extension = file.name.split(".").pop()?.toLowerCase();
         addCell(`\`\`\`${extension}\n${content}\n\`\`\``, path); // Assumes addCell now accepts content and id
       }
     } catch (error) {
@@ -78,18 +79,19 @@ export default function HomePage(): ReactElement {
                 .flatMap((msg) => msg.proposedChanges || [])
                 .find((change) => change.targetCellId === cell.id)?.newContent;
               return (
-              <MarkdownCell
-                key={cell.id}
-                cell={cell}
-                isEditing={editingCellId === cell.id}
-                isHighlighted={highlightedCellId === cell.id}
-                onStartEditing={startEditingCell}
-                onStopEditing={stopEditingCell}
-                onDelete={deleteCell}
-                onUpdateCellId={handleUpdateCellId}
+                <MarkdownCell
+                  key={cell.id}
+                  cell={cell}
+                  isEditing={editingCellId === cell.id}
+                  isHighlighted={highlightedCellId === cell.id}
+                  onStartEditing={startEditingCell}
+                  onStopEditing={stopEditingCell}
+                  onDelete={deleteCell}
+                  onUpdateCellId={handleUpdateCellId}
                   proposedChange={proposedChange}
-              />
-            ))}
+                />
+              );
+            })}
             <div className="relative">
               <div className="flex">
                 <button
@@ -146,10 +148,10 @@ export default function HomePage(): ReactElement {
             isTtsSpeaking={isTtsSpeaking}
             ttsEnabled={ttsEnabled}
             onToggleTts={setTtsEnabled}
+            onClearMessages={clearChatMessages}
           />
         </aside>
       </div>
     </>
   );
 }
-

@@ -46,5 +46,6 @@ export const useCoWriterCore = (modelName: keyof typeof models, selectedNotebook
       coWriterInstance!.handleSendMessage(message, modelName),
     handleApplyChanges: coWriterInstance!.handleApplyChanges,
     handleRejectChanges: coWriterInstance!.handleRejectChanges,
+    clearChatMessages: coWriterInstance!.clearChatMessages,
   };
 };
