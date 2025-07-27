@@ -1,0 +1,7 @@
+/* Custom pulse animation delays for loading dots */
+.pulse-delay-200 {
+  animation-delay: 0.2s;
+}
+.pulse-delay-400 {
+  animation-delay: 0.4s;
+}

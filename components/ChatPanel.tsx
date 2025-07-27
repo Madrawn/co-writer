@@ -1,10 +1,10 @@
 "use client";
 import React, { useState, useRef, useEffect } from "react";
 import type { ChatMessage } from "../types";
-import { PaperAirplaneIcon } from "./icons";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import ChangePreview from "./ChangePreview";
+import "./ChatPanel.css";
+import ChatPanelHeader from "./ChatPanelHeader";
+import ChatMessagesList from "./ChatMessagesList";
+import ChatInput from "./ChatInput";
 
 interface ChatPanelProps {
   messages: ChatMessage[];
@@ -268,215 +268,36 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
       data-testid="chat-panel"
       className="bg-gray-800/50 backdrop-blur-sm border-l border-gray-700/50 w-full flex flex-col h-full max-h-full"
     >
-      {/* Show selected model and language in chat panel header */}
-      <div className="px-6 pt-4 pb-2 text-gray-300 text-sm font-semibold flex items-center justify-between">
-        <span>Model: {modelName}</span>
-        <div className="flex items-center space-x-2">
-          {/* TTS Toggle Button */}
-          <button
-            type="button"
-            onClick={() => onToggleTts(!ttsEnabled)}
-            className={`px-2 py-1 rounded text-xs font-medium border ${
-              ttsEnabled
-                ? "text-green-400 border-green-500 bg-green-900/30"
-                : "text-gray-400 border-gray-500 hover:text-white hover:border-white"
-            }`}
-            title={
-              ttsEnabled ? "Disable Text-to-Speech" : "Enable Text-to-Speech"
-            }
-          >
-            {ttsEnabled ? "TTS On" : "TTS Off"}
-          </button>
-          {/* Language Selector */}
-          <button
-            type="button"
-            onClick={toggleSpeechLang}
-            disabled={isListening}
-            className={`ml-2 px-2 py-1 rounded text-xs font-medium border ${
-              !isListening
-                ? "text-gray-400 border-gray-500 hover:text-white hover:border-white"
-                : "text-gray-500 border-gray-700 cursor-not-allowed"
-            }`}
-            title={`Switch to ${
-              speechLang === "en-US" ? "German" : "English"
-            } (Speech)`}
-          >
-            {speechLang === "en-US" ? "EN" : "DE"}
-          </button>
-          {/* Clear Chat Button */}
-          <button
-            type="button"
-            onClick={onClearMessages}
-            className="ml-2 px-2 py-1 rounded text-xs font-medium border text-red-400 border-red-500 hover:bg-red-900/30"
-            title="Clear chat messages"
-            disabled={messages.length === 0}
-          >
-            Clear
-          </button>
-        </div>
-      </div>
-      <div className="flex-1 p-6 overflow-y-auto space-y-4">
-        {messages.map((msg) => {
-          const showChangeCard =
-            msg.role === "model" &&
-            msg.proposedChanges &&
-            msg.proposedChanges.length > 0;
-          if (showChangeCard) {
-            return (
-              <div key={msg.id} className="flex justify-start">
-                <div className="max-w-md w-full">
-                  <ChangePreview
-                    messageId={msg.id}
-                    changes={msg.proposedChanges!}
-                    reviewDecision={msg.reviewDecision}
-                    onApply={onApplyChanges}
-                    onReject={onRejectChanges}
-                    cleanContent={msg.cleanContent || ""}
-                    onHighlightCell={onHighlightCell}
-                  />
-                </div>
-              </div>
-            );
-          }
-          return (
-            <div
-              key={msg.id}
-              className={`flex ${
-                msg.role === "user" ? "justify-end" : "justify-start"
-              }`}
-            >
-              <div
-                className={`max-w-md rounded-xl px-4 py-2 text-white ${
-                  msg.role === "user" ? "bg-blue-600" : "bg-gray-700"
-                }`}
-              >
-                <div className="prose prose-invert prose-sm max-w-none prose-p:my-1 prose-p:text-white prose-code:text-pink-300">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {msg.cleanContent || msg.content}
-                  </ReactMarkdown>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-        {isLoading && messages[messages.length - 1]?.role === "user" && (
-          <div className="flex justify-start">
-            <div className="max-w-md rounded-xl px-4 py-3 bg-gray-700">
-              <div className="flex items-center justify-center space-x-2">
-                <div className="w-2 h-2 rounded-full bg-gray-400 animate-pulse"></div>
-                <div
-                  className="w-2 h-2 rounded-full bg-gray-400 animate-pulse"
-                  style={{ animationDelay: "0.2s" }}
-                ></div>
-                <div
-                  className="w-2 h-2 rounded-full bg-gray-400 animate-pulse"
-                  style={{ animationDelay: "0.4s" }}
-                ></div>
-              </div>
-            </div>
-          </div>
-        )}
-        <div ref={messagesEndRef} />
-      </div>
-      <div className="p-4 border-t border-gray-700/50">
-        <form onSubmit={handleSend} className="relative">
-          <textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                handleSend(e);
-              }
-            }}
-            placeholder="Ask CoWriter anything..."
-            disabled={isLoading || isListening}
-            rows={1}
-            className="w-full bg-gray-700 rounded-full py-3 pl-4 pr-24 text-gray-200 placeholder-gray-400 resize-none focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
-          />
-          {interimSpeech && (
-            <div className="absolute bottom-14 left-4 right-4 bg-gray-600/80 rounded-lg p-2 text-sm text-gray-300 animate-pulse">
-              {interimSpeech}
-            </div>
-          )}
-          <div className="absolute right-2 top-1/2 -translate-y-1/2 flex space-x-2">
-            {/* Always show mode toggle button */}
-            <button
-              type="button"
-              onClick={toggleRecordingMode}
-              className={`p-1 rounded-full ${
-                !isListening
-                  ? "text-gray-400 hover:text-white"
-                  : "text-gray-500"
-              }`} // REMOVED: disabled state
-              title={`Switch to ${
-                recordingMode === "auto-stop" ? "continuous" : "auto-stop"
-              } mode`}
-            >
-              {recordingMode === "auto-stop" ? (
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-4 w-4"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              ) : (
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-4 w-4"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path d="M5 4a1 1 0 00-2 0v7.268a2 2 0 000 3.464V16a1 1 0 102 0v-1.268a2 2 0 000-3.464V4zM11 4a1 1 0 10-2 0v1.268a2 2 0 000 3.464V16a1 1 0 102 0V8.732a2 2 0 000-3.464V4zM16 3a1 1 0 011 1v7.268a2 2 0 010 3.464V16a1 1 0 11-2 0v-1.268a2 2 0 010-3.464V4a1 1 0 011-1z" />
-                </svg>
-              )}
-            </button>
-            <button
-              type="button"
-              onClick={toggleListening}
-              disabled={isLoading}
-              className={`p-2 rounded-full relative ${
-                isListening
-                  ? "text-red-500 bg-red-900/50 animate-pulse"
-                  : "text-gray-400 bg-gray-600/50 hover:bg-gray-500"
-              } transition-colors`}
-              aria-label={isListening ? "Stop listening" : "Start voice input"}
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              {recordingMode === "auto-stop" && countdown !== null && (
-                <div className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold">
-                  {Math.ceil(countdown)}
-                </div>
-              )}
-            </button>
-            <button
-              type="submit"
-              disabled={isLoading || !input.trim()}
-              className="p-2 rounded-full text-white bg-blue-600 disabled:bg-gray-500 disabled:cursor-not-allowed hover:bg-blue-500 transition-colors"
-              aria-label="Send message"
-            >
-              <PaperAirplaneIcon className="w-5 h-5" />
-            </button>
-          </div>
-        </form>
-      </div>
+      <ChatPanelHeader
+        modelName={modelName}
+        ttsEnabled={ttsEnabled}
+        onToggleTts={onToggleTts}
+        speechLang={speechLang}
+        toggleSpeechLang={toggleSpeechLang}
+        isListening={isListening}
+        onClearMessages={onClearMessages}
+        messagesLength={messages.length}
+      />
+      <ChatMessagesList
+        messages={messages}
+        onApplyChanges={onApplyChanges}
+        onRejectChanges={onRejectChanges}
+        onHighlightCell={onHighlightCell}
+        isLoading={isLoading}
+      />
+      <div ref={messagesEndRef} />
+      <ChatInput
+        input={input}
+        setInput={setInput}
+        handleSend={handleSend}
+        interimSpeech={interimSpeech}
+        toggleRecordingMode={toggleRecordingMode}
+        recordingMode={recordingMode}
+        isListening={isListening}
+        toggleListening={toggleListening}
+        isLoading={isLoading}
+        countdown={countdown}
+      />
     </div>
   );
 };

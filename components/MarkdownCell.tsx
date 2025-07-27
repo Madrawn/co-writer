@@ -7,11 +7,11 @@ import rehypeRaw from "rehype-raw";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/cjs/styles/prism";
 import mermaid from "mermaid";
+import "./MarkdownCell.css";
 
 import { TrashIcon, PencilIcon } from "./icons";
 import type { MarkdownCellData } from "@/types";
 import { CellIdLabel } from "./CellIdLabel";
-
 
 export interface MarkdownCellProps {
   cell: MarkdownCellData;
@@ -137,13 +137,13 @@ const MarkdownCell: React.FC<MarkdownCellProps> = ({
           lang = codeBlockStart[1] || "";
           inside = true;
           // Render the code block marker as plain text
-          return <span style={{ opacity: 0.5 }}>{line}</span>;
+          return <span className="code-block-marker">{line}</span>;
         }
         // Detect code block end: ```
         if (inside && line.trim() === "```") {
           lang = null;
           inside = false;
-          return <span style={{ opacity: 0.5 }}>{line}</span>;
+          return <span className="code-block-marker">{line}</span>;
         }
         // If inside a code block, highlight with the detected language
         if (inside && lang) {
@@ -151,7 +151,11 @@ const MarkdownCell: React.FC<MarkdownCellProps> = ({
             <SyntaxHighlighter
               style={vscDarkPlus}
               language={lang}
-              customStyle={{ display: "inline", background: "none", padding: 0 }}
+              customStyle={{
+                display: "inline",
+                background: "none",
+                padding: 0,
+              }}
               PreTag="span"
             >
               {line}

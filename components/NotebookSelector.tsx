@@ -1,7 +1,15 @@
 "use client";
 import React from "react";
 
-export default function NotebookSelector(props: { selectedNotebook: string | number | readonly string[] | undefined; setNotebookIndex: (arg0: number) => void; notebooks: any[]; addNotebook: () => void; removeNotebook: (arg0: any) => void; }) {
+interface NotebookSelectorProps {
+    notebooks: any[]; // Replace 'any' with a more specific type if available
+    addNotebook: () => void;
+    removeNotebook: (index: number) => void;
+    setNotebookIndex: (index: number) => void;
+    selectedNotebook: number;
+}
+
+export default function NotebookSelector(props: NotebookSelectorProps) {
     return (
         <div className="mb-4 flex items-center gap-2">
             <label htmlFor="notebook-select" className="text-gray-300 mr-2">
@@ -10,10 +18,10 @@ export default function NotebookSelector(props: { selectedNotebook: string | num
             <select
                 id="notebook-select"
                 value={props.selectedNotebook}
-                onChange={(e) => props.setNotebookIndex(Number(e.target.value))}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => props.setNotebookIndex(Number(e.target.value))}
                 className="bg-gray-700 text-gray-200 rounded px-2 py-1"
             >
-                {props.notebooks.map((_, idx) => (
+                {props.notebooks.map((_: any, idx: number) => (
                     <option key={idx} value={idx}>{`Notebook ${idx + 1}`}</option>
                 ))}
             </select>
