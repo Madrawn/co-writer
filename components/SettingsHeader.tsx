@@ -1,6 +1,6 @@
 "use client";
-import NotebookSelector from "@/components/NotebookSelector";
-import { models } from "@/lib/azureService";
+import NotebookSelector from "../components/NotebookSelector";
+import { models } from "../lib/azureService";
 import React from "react";
 
 // Types for SettingsHeader props
