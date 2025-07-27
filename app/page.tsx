@@ -6,6 +6,7 @@ import { PlusIcon, ChevronDownIcon } from "../components/icons"; // Add ChevronD
 import { useCoWriter } from "../hooks/useCoWriter";
 import { models } from "../lib/azureService";
 import { SettingsHeader } from "../components/SettingsHeader";
+import { retrieveFiles } from "./retrieveFiles";
 
 export default function HomePage(): ReactElement {
   // Import models from azureService
@@ -40,24 +41,7 @@ export default function HomePage(): ReactElement {
   const [menuOpen, setMenuOpen] = React.useState(false);
   const handleInsertFiles = async (isFolder = false) => {
     try {
-      let files = [];
-
-      if (isFolder) {
-        const dirHandle: FileSystemDirectoryHandle = await (
-          window as any
-        ).showDirectoryPicker();
-        files = await traverseDirectory(dirHandle);
-      } else {
-        const fileHandles: FileSystemFileHandle[] = await (
-          window as any
-        ).showOpenFilePicker({ multiple: true });
-        files = await Promise.all(
-          fileHandles.map(async (handle: FileSystemFileHandle) => ({
-            file: await handle.getFile(),
-            path: handle.name,
-          }))
-        );
-      }
+      let files = await retrieveFiles(isFolder);
 
       for (const { file, path } of files) {
         const content = await file.text();
@@ -66,26 +50,6 @@ export default function HomePage(): ReactElement {
     } catch (error) {
       console.error("Error selecting files:", error);
     }
-  };
-
-  const traverseDirectory = async (
-    dirHandle: FileSystemDirectoryHandle,
-    path: string = ""
-  ): Promise<{ file: File; path: string }[]> => {
-    const files: { file: File; path: string }[] = [];
-    // @ts-expect-error: TypeScript does not recognize values() on FileSystemDirectoryHandle, but it exists in browsers
-    for await (const entry of dirHandle.values()) {
-      const entryPath = `${path}/${entry.name}`;
-      if (entry.kind === "file") {
-        files.push({
-          file: await entry.getFile(),
-          path: entryPath.substring(1), // Remove leading slash
-        });
-      } else if (entry.kind === "directory") {
-        files.push(...(await traverseDirectory(entry, entryPath)));
-      }
-    }
-    return files;
   };
 
   return (
@@ -181,3 +145,4 @@ export default function HomePage(): ReactElement {
     </>
   );
 }
+
