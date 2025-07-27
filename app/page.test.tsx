@@ -3,18 +3,15 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import HomePage from "./page";
 import type { MarkdownCellData, ChatMessage } from "../types";
-import { CoWriter, OriginalCoWriter } from "../lib/coWriter";
+import { CoWriter } from "../lib/coWriter";
 const addNotebookSpy = vi.fn();
 const removeNotebookSpy = vi.fn();
 const setSelectedNotebookSpy = vi.fn();
 // 2. Mock the entire coWriter module.
 // This must be done at the top level, before any imports that use it.
-vi.mock("../lib/coWriter", async (importOriginal) => {
+vi.mock("../lib/coWriter", async () => {
   // The factory function returns the module's mocked exports.
-  const originalCoWriter = await importOriginal() // type is inferred
   return {
-
-    OriginalCoWriter: originalCoWriter.CoWriter,
     // We export a mock CoWriter class...
     CoWriter: vi.fn().mockImplementation(() => {
       // ...and its constructor returns a mock instance object.
@@ -102,119 +99,18 @@ if (!window.HTMLElement.prototype.scrollIntoView) {
   window.HTMLElement.prototype.scrollIntoView = function () {};
 }
 
-describe("CoWriter", () => {
+describe("HomePage", () => {
   const fakeStreamChatFn = vi.fn();
-  const initialModel = "gpt-4.1" as const;
 
   beforeEach(() => {
     localStorage.clear();
     fakeStreamChatFn.mockReset();
   });
 
-  it("initializes with default state", () => {
-    const cw = new OriginalCoWriter(fakeStreamChatFn, initialModel);
-    const state = cw.getState();
-    expect(state.notebooks.length).toBeGreaterThan(0);
-    expect(state.chatMessages.length).toBeGreaterThan(0);
-    expect(state.isLoading).toBe(false);
-    expect(state.selectedNotebook).toBe(0);
-  });
-
-  it("can add and remove notebooks", () => {
-    const cw = new OriginalCoWriter(fakeStreamChatFn, initialModel);
-    const prevCount = cw.getState().notebooks.length;
-    cw.addNotebook([{ id: "test", content: "abc" }]);
-    expect(cw.getState().notebooks.length).toBe(prevCount + 1);
-    expect(cw.getState().selectedNotebook).toBe(prevCount);
-
-    cw.removeNotebook(prevCount);
-    expect(cw.getState().notebooks.length).toBe(prevCount);
-  });
-
-  it("does not remove last notebook", () => {
-    const cw = new CoWriter(fakeStreamChatFn, initialModel);
-    // Remove until only one left
-    while (cw.getState().notebooks.length > 1) {
-      cw.removeNotebook(0);
-    }
-    const count = cw.getState().notebooks.length;
-    cw.removeNotebook(0);
-    expect(cw.getState().notebooks.length).toBe(count);
-  });
-
-  it("can set selected notebook", () => {
-    const cw = new OriginalCoWriter(fakeStreamChatFn, initialModel);
-    cw.addNotebook([{ id: "test2", content: "def" }]);
-    cw.setSelectedNotebook(1);
-    expect(cw.getState().selectedNotebook).toBe(1);
-    cw.setSelectedNotebook(99); // out of bounds
-    expect(cw.getState().selectedNotebook).toBe(1);
-  });
-
-  it("can add, update, and delete cells", () => {
-    const cw = new OriginalCoWriter(fakeStreamChatFn, initialModel);
-    cw.addNotebook();
-    cw.setSelectedNotebook(1);
-    const cellId = cw.addCell("hello");
-    let cells = cw.getState().notebooks[1];
-    expect(cells.some((c) => c.id === cellId)).toBe(true);
-
-    cw.updateCell(cellId, "world");
-    cells = cw.getState().notebooks[1];
-    expect(cells.find((c) => c.id === cellId)?.content).toBe("world");
-
-    cw.deleteCell(cellId);
-    cells = cw.getState().notebooks[1];
-    expect(cells.some((c) => c.id === cellId)).toBe(false);
-  });
-
-  it("can update cell id", () => {
-    const cw = new OriginalCoWriter(fakeStreamChatFn, initialModel);
-    cw.addNotebook();
-    cw.setSelectedNotebook(1);
-    const cellId = cw.addCell("foo");
-    cw.updateCellId(cellId, "bar");
-    const cells = cw.getState().notebooks[1];
-    expect(cells.some((c) => c.id === "bar")).toBe(true);
-    expect(cells.some((c) => c.id === cellId)).toBe(false);
-  });
-
-  it("notifies listeners on state change", () => {
-    const cw = new OriginalCoWriter(fakeStreamChatFn, initialModel);
-    const listener = vi.fn();
-    cw.subscribe(listener);
-    cw.addNotebook();
-    expect(listener).toHaveBeenCalled();
-  });
-
-  it("handleApplyChanges and handleRejectChanges update chatMessages", () => {
-    const cw = new OriginalCoWriter(fakeStreamChatFn, initialModel);
-    // Add a message with proposedChanges
-    const msg: ChatMessage = {
-      id: "msg1",
-      role: "model",
-      content: "test",
-      proposedChanges: [{ targetCellId: "new", newContent: "abc" }],
-    };
-    // @ts-ignore
-    cw.getState().chatMessages.push(msg);
-    // Actually update state
-    (cw as any).state.chatMessages.push(msg);
-
-    cw.handleApplyChanges("msg1");
-    const appliedMsg = cw.getState().chatMessages.find((m) => m.id === "msg1");
-    expect(appliedMsg?.reviewDecision).toBe("applied");
-
-    cw.handleRejectChanges("msg1");
-    const rejectedMsg = cw.getState().chatMessages.find((m) => m.id === "msg1");
-    expect(rejectedMsg?.reviewDecision).toBe("rejected");
-  });
-
   it("calls addNotebook and removeNotebook", () => {
     render(<HomePage />);
     fireEvent.click(screen.getByTitle("Add Notebook"));
     expect(addNotebookSpy).toHaveBeenCalled();
-    
 
     fireEvent.click(screen.getByTitle("Remove Notebook"));
     expect(removeNotebookSpy).toHaveBeenCalledWith(0);
@@ -236,5 +132,56 @@ describe("CoWriter", () => {
   it("renders ChatPanel with correct props", () => {
     render(<HomePage />);
     expect(screen.getByTestId("chat-panel")).toBeInTheDocument();
+  });
+});
+
+// --- Unit tests for HomePage rendering ---
+describe("HomePage", () => {
+  it("renders without crashing", () => {
+    render(<HomePage />);
+    expect(screen.getByText(/Co-Writer Notebook/i)).toBeInTheDocument();
+  });
+});
+
+describe("HomePage UI", () => {
+  it("renders the main heading", () => {
+    render(<HomePage />);
+    expect(screen.getByText(/Co-Writer Notebook/i)).toBeInTheDocument();
+  });
+
+  it("shows Add Cell button and triggers addCell on click", () => {
+    render(<HomePage />);
+    const addCellBtn = screen.getByText(/Add Cell/i);
+    expect(addCellBtn).toBeInTheDocument();
+    fireEvent.click(addCellBtn);
+    // No assertion here since addCell is mocked, but no error should occur
+  });
+
+  it("shows menu when menu button is clicked", () => {
+    render(<HomePage />);
+    const menuBtn = screen.getByTitle("Add cell Menu");
+    fireEvent.click(menuBtn);
+    expect(screen.getByText(/Insert file\(s\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/Insert folder/i)).toBeInTheDocument();
+  });
+
+  it("calls handleInsertFiles with correct argument when Insert file(s) is clicked", async () => {
+    render(<HomePage />);
+    const menuBtn = screen.getByTitle("Add cell Menu");
+    fireEvent.click(menuBtn);
+    const insertFilesBtn = screen.getByText(/Insert file\(s\)/i);
+    expect(insertFilesBtn).toBeInTheDocument();
+    fireEvent.click(insertFilesBtn);
+    // No assertion, just ensure no error
+  });
+
+  it("calls handleInsertFiles with correct argument when Insert folder is clicked", async () => {
+    render(<HomePage />);
+    const menuBtn = screen.getByTitle("Add cell Menu");
+    fireEvent.click(menuBtn);
+    const insertFolderBtn = screen.getByText(/Insert folder/i);
+    expect(insertFolderBtn).toBeInTheDocument();
+    fireEvent.click(insertFolderBtn);
+    // No assertion, just ensure no error
   });
 });

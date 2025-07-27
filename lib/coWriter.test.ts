@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { CoWriter } from "./coWriter";
+import { ChatMessage } from "@/types";
 
 // lib/coWriter.test.ts
 
@@ -167,7 +168,10 @@ describe("CoWriter.handleSendMessage", () => {
         const id = coWriter.addCell("new content");
         const state = coWriter.getState();
         expect(state.notebooks[0].length).toBe(3);
-        expect(state.notebooks[0][2]).toMatchObject({ id, content: "new content" });
+        expect(state.notebooks[0][2]).toMatchObject({
+          id,
+          content: "new content",
+        });
         expect(globalThis.localStorage.setItem).toHaveBeenCalledWith(
           "co-writer-notebooks",
           JSON.stringify(state.notebooks)
@@ -204,7 +208,10 @@ describe("CoWriter.handleSendMessage", () => {
       it("updates the content of the cell with the given id", () => {
         coWriter.updateCell("cell2", "updated");
         const state = coWriter.getState();
-        expect(state.notebooks[0][1]).toMatchObject({ id: "cell2", content: "updated" });
+        expect(state.notebooks[0][1]).toMatchObject({
+          id: "cell2",
+          content: "updated",
+        });
         expect(globalThis.localStorage.setItem).toHaveBeenCalledWith(
           "co-writer-notebooks",
           JSON.stringify(state.notebooks)
@@ -288,7 +295,10 @@ describe("CoWriter.handleSendMessage", () => {
       const state = coWriter.getState();
       expect(state.notebooks.length).toBe(3);
       expect(state.selectedNotebook).toBe(2);
-      expect(state.notebooks[2][0]).toMatchObject({ id: "cell3", content: "C" });
+      expect(state.notebooks[2][0]).toMatchObject({
+        id: "cell3",
+        content: "C",
+      });
       expect(globalThis.localStorage.setItem).toHaveBeenCalledWith(
         "co-writer-notebooks",
         JSON.stringify(state.notebooks)
@@ -370,9 +380,15 @@ describe("CoWriter.handleSendMessage", () => {
       coWriter.handleApplyChanges("msg1");
       const state = coWriter.getState();
       // cell1 updated, cell2 unchanged, cellX added, new cell added
-      expect(state.notebooks[0].find((c) => c.id === "cell1")?.content).toBe("A2");
-      expect(state.notebooks[0].find((c) => c.id === "cell2")?.content).toBe("B");
-      expect(state.notebooks[0].find((c) => c.id === "cellX")?.content).toBe("X");
+      expect(state.notebooks[0].find((c) => c.id === "cell1")?.content).toBe(
+        "A2"
+      );
+      expect(state.notebooks[0].find((c) => c.id === "cell2")?.content).toBe(
+        "B"
+      );
+      expect(state.notebooks[0].find((c) => c.id === "cellX")?.content).toBe(
+        "X"
+      );
       // The "new" cell gets a generated id and content "C"
       expect(state.notebooks[0].some((c) => c.content === "C")).toBe(true);
       // Message reviewDecision is "applied"
@@ -390,21 +406,27 @@ describe("CoWriter.handleSendMessage", () => {
     });
 
     it("handleApplyChanges does nothing if no proposedChanges", () => {
-      coWriter["state"].chatMessages = [{ id: "msg2", role: "model", content: "foo" }];
+      coWriter["state"].chatMessages = [
+        { id: "msg2", role: "model", content: "foo" },
+      ];
       coWriter.handleApplyChanges("msg2");
       expect(coWriter.getState().notebooks[0].length).toBe(2);
     });
 
     it("handleRejectChanges marks message as rejected and sets feedback", () => {
       coWriter.handleRejectChanges("msg1");
-      expect(coWriter.getState().chatMessages[0].reviewDecision).toBe("rejected");
+      expect(coWriter.getState().chatMessages[0].reviewDecision).toBe(
+        "rejected"
+      );
       expect(coWriter["feedbackForNextPrompt"]).toContain("rejected");
     });
 
     it("handleRejectChanges does nothing if message id not found", () => {
       coWriter.handleRejectChanges("notfound");
       // No error, no reviewDecision set
-      expect(coWriter.getState().chatMessages[0].reviewDecision).toBeUndefined();
+      expect(
+        coWriter.getState().chatMessages[0].reviewDecision
+      ).toBeUndefined();
     });
   });
 
@@ -413,16 +435,16 @@ describe("CoWriter.handleSendMessage", () => {
     beforeEach(() => {
       const streamChatFn = vi.fn();
       coWriter = new CoWriter(streamChatFn, "gpt-4.1");
-      coWriter["state"].notebooks = [
-        [{ id: "cell1", content: "A" }],
-      ];
+      coWriter["state"].notebooks = [[{ id: "cell1", content: "A" }]];
       coWriter["state"].selectedNotebook = 0;
     });
 
     it("subscribe immediately calls listener and unsubscribes correctly", () => {
       const listener = vi.fn();
       const unsubscribe = coWriter.subscribe(listener);
-      expect(listener).toHaveBeenCalledWith(expect.objectContaining({ notebooks: expect.any(Array) }));
+      expect(listener).toHaveBeenCalledWith(
+        expect.objectContaining({ notebooks: expect.any(Array) })
+      );
       coWriter.addCell("foo");
       expect(listener).toHaveBeenCalledTimes(2);
       unsubscribe();
@@ -439,7 +461,115 @@ describe("CoWriter.handleSendMessage", () => {
       expect(coWriter["modelName"]).toBe("modelB");
     });
   });
+  describe("CoWriter", () => {
+    const fakeStreamChatFn = vi.fn();
+    const initialModel = "gpt-4.1" as const;
+    beforeEach(() => {
+      localStorage.clear();
+      fakeStreamChatFn.mockReset();
+    });
 
+    it("initializes with default state", () => {
+      const cw = new CoWriter(fakeStreamChatFn, initialModel);
+      const state = cw.getState();
+      expect(state.notebooks.length).toBeGreaterThan(0);
+      expect(state.chatMessages.length).toBeGreaterThan(0);
+      expect(state.isLoading).toBe(false);
+      expect(state.selectedNotebook).toBe(0);
+    });
 
+    it("can add and remove notebooks", () => {
+      const cw = new CoWriter(fakeStreamChatFn, initialModel);
+      const prevCount = cw.getState().notebooks.length;
+      cw.addNotebook([{ id: "test", content: "abc" }]);
+      expect(cw.getState().notebooks.length).toBe(prevCount + 1);
+      expect(cw.getState().selectedNotebook).toBe(prevCount);
 
+      cw.removeNotebook(prevCount);
+      expect(cw.getState().notebooks.length).toBe(prevCount);
+    });
+
+    it("does not remove last notebook", () => {
+      const cw = new CoWriter(fakeStreamChatFn, initialModel);
+      // Remove until only one left
+      while (cw.getState().notebooks.length > 1) {
+        cw.removeNotebook(0);
+      }
+      const count = cw.getState().notebooks.length;
+      cw.removeNotebook(0);
+      expect(cw.getState().notebooks.length).toBe(count);
+    });
+
+    it("can set selected notebook", () => {
+      const cw = new CoWriter(fakeStreamChatFn, initialModel);
+      cw.addNotebook([{ id: "test2", content: "def" }]);
+      cw.setSelectedNotebook(1);
+      expect(cw.getState().selectedNotebook).toBe(1);
+      cw.setSelectedNotebook(99); // out of bounds
+      expect(cw.getState().selectedNotebook).toBe(1);
+    });
+
+    it("can add, update, and delete cells", () => {
+      const cw = new CoWriter(fakeStreamChatFn, initialModel);
+      cw.addNotebook();
+      cw.setSelectedNotebook(1);
+      const cellId = cw.addCell("hello");
+      let cells = cw.getState().notebooks[1];
+      expect(cells.some((c) => c.id === cellId)).toBe(true);
+
+      cw.updateCell(cellId, "world");
+      cells = cw.getState().notebooks[1];
+      expect(cells.find((c) => c.id === cellId)?.content).toBe("world");
+
+      cw.deleteCell(cellId);
+      cells = cw.getState().notebooks[1];
+      expect(cells.some((c) => c.id === cellId)).toBe(false);
+    });
+
+    it("can update cell id", () => {
+      const cw = new CoWriter(fakeStreamChatFn, initialModel);
+      cw.addNotebook();
+      cw.setSelectedNotebook(1);
+      const cellId = cw.addCell("foo");
+      cw.updateCellId(cellId, "bar");
+      const cells = cw.getState().notebooks[1];
+      expect(cells.some((c) => c.id === "bar")).toBe(true);
+      expect(cells.some((c) => c.id === cellId)).toBe(false);
+    });
+
+    it("notifies listeners on state change", () => {
+      const cw = new CoWriter(fakeStreamChatFn, initialModel);
+      const listener = vi.fn();
+      cw.subscribe(listener);
+      cw.addNotebook();
+      expect(listener).toHaveBeenCalled();
+    });
+
+    it("handleApplyChanges and handleRejectChanges update chatMessages", () => {
+      const cw = new CoWriter(fakeStreamChatFn, initialModel);
+      // Add a message with proposedChanges
+      const msg: ChatMessage = {
+        id: "msg1",
+        role: "model",
+        content: "test",
+        proposedChanges: [{ targetCellId: "new", newContent: "abc" }],
+      };
+      // @ts-ignore
+      cw.getState().chatMessages.push(msg);
+      // Actually update state
+      (cw as any).state.chatMessages.push(msg);
+
+      cw.handleApplyChanges("msg1");
+      const appliedMsg = cw
+        .getState()
+        .chatMessages.find((m) => m.id === "msg1");
+      expect(appliedMsg?.reviewDecision).toBe("applied");
+
+      cw.handleRejectChanges("msg1");
+      const rejectedMsg = cw
+        .getState()
+        .chatMessages.find((m) => m.id === "msg1");
+      expect(rejectedMsg?.reviewDecision).toBe("rejected");
+    });
+  });
 });
