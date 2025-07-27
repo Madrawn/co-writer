@@ -72,7 +72,12 @@ export default function HomePage(): ReactElement {
               setNotebookIndex={setNotebookIndex}
               selectedNotebook={selectedNotebook}
             ></SettingsHeader>
-            {cells.map((cell) => (
+            {cells.map((cell) => {
+              // Find a proposed change for this cell (if any)
+              const proposedChange = chatMessages
+                .flatMap((msg) => msg.proposedChanges || [])
+                .find((change) => change.targetCellId === cell.id)?.newContent;
+              return (
               <MarkdownCell
                 key={cell.id}
                 cell={cell}
@@ -82,6 +87,7 @@ export default function HomePage(): ReactElement {
                 onStopEditing={stopEditingCell}
                 onDelete={deleteCell}
                 onUpdateCellId={handleUpdateCellId}
+                  proposedChange={proposedChange}
               />
             ))}
             <div className="relative">
