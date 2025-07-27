@@ -1,6 +1,7 @@
 // hooks/useCoWriterCore.ts
 import { useState, useEffect } from 'react';
-import { CoWriter, CoWriterState } from '../lib/coWriter';
+import { CoWriter } from '../lib/coWriter';
+import { CoWriterState } from "@/types";
 import { streamChatResponse } from '../lib/backendService'; // Updated import
 import { models } from '@/lib/azureService';
 

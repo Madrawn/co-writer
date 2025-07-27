@@ -35,6 +35,11 @@ You can also choose to specify a new ID for the cell by replacing "new" with you
 \`\`\`
 ---CELL---
 
+Note: Markdown cells support Mermaid diagram rendering. To include diagrams, use \`\`\`mermaid code blocks in your markdown content. For example: 
+\`\`\`mermaid
+graph TD; A-->B; A-->C;
+\`\`\`
+
 Any text outside of these special blocks will be treated as your regular chat response. For example:
 "Sure, I've updated the cell with a numbered list for you.
 

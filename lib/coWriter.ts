@@ -1,21 +1,6 @@
-import type { MarkdownCellData, ChatMessage } from "../types";
+import type { MarkdownCellData, ChatMessage, StreamChatFn, CoWriterState, StateListener } from "../types";
 import { models } from "./azureService";
 import { parseGeminiResponse } from "./parser";
-
-export interface CoWriterState {
-  notebooks: MarkdownCellData[][]; // renamed from 'cells'
-  chatMessages: ChatMessage[];
-  isLoading: boolean;
-  selectedNotebook: number; // renamed from 'slot'
-}
-
-export type StreamChatFn = (
-  historyWithNewMessage: ChatMessage[],
-  cells: MarkdownCellData[],
-  feedback: string | null,
-  modelName: keyof typeof models
-) => Promise<AsyncGenerator<{ text: string | undefined }>>;
-type StateListener = (state: CoWriterState) => void;
 
 const LOCAL_STORAGE_KEY = "co-writer-notebooks";
 const LOCAL_STORAGE_SELECTED_KEY = "co-writer-selected-notebook";
@@ -67,6 +52,7 @@ export class CoWriter {
     streamChatFn: StreamChatFn,
     initialModelName: keyof typeof models
   ) {
+    this.clearChatMessages = this.clearChatMessages.bind(this);
     this.streamChatFn = streamChatFn;
     this.modelName = initialModelName;
     this.state = {
@@ -76,6 +62,21 @@ export class CoWriter {
       selectedNotebook: this.loadSelectedNotebookFromStorage(),
     };
   }
+  /**
+   * Clear all chat messages and reset to initial message
+   */
+  public clearChatMessages = () => {
+    this.setState(() => ({
+      chatMessages: [
+        {
+          id: crypto.randomUUID(),
+          role: "model",
+          content:
+            "Hello! I'm CoWriter. I'm ready to help. Your notes are my context. What should we work on?",
+        },
+      ],
+    }));
+  };
 
   public setModelName(modelName: keyof typeof models) {
     this.modelName = modelName;

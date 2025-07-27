@@ -1,3 +1,5 @@
+import { models } from "./lib/azureService";
+
 export interface MarkdownCellData {
   id: string;
   content: string;
@@ -21,3 +23,16 @@ export interface ChatMessage {
   // Tracks the user's decision on the proposed changes
   reviewDecision?: 'applied' | 'rejected';
 }
+export type StreamChatFn = (
+  historyWithNewMessage: ChatMessage[],
+  cells: MarkdownCellData[],
+  feedback: string | null,
+  modelName: keyof typeof models
+) => Promise<AsyncGenerator<{ text: string | undefined; }>>;export interface CoWriterState {
+  notebooks: MarkdownCellData[][]; // renamed from 'cells'
+  chatMessages: ChatMessage[];
+  isLoading: boolean;
+  selectedNotebook: number; // renamed from 'slot'
+}
+export type StateListener = (state: CoWriterState) => void;
+
