@@ -1,13 +1,12 @@
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/cjs/styles/prism";
-import React from "react";
 
 const MakeHighlightSyntax = () => {
   let lang: string | null = null;
   let inside = false;
   return (line: string) => {
     // Detect code block start: ```lang
-    if (!!!line) return <span>{line}</span>; // Handle undefined or null input
+    if (!line) return <span>{line}</span>; // Handle undefined or null input
     const codeBlockStart = line.match(/^```([a-zA-Z0-9]*)/);
     if (codeBlockStart) {
       lang = codeBlockStart[1] || "";

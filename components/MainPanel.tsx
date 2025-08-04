@@ -2,8 +2,7 @@ import { memo } from "react";
 import MarkdownCell from "../components/MarkdownCell";
 import { PlusIcon, ChevronDownIcon } from "../components/icons";
 import { SettingsHeader } from "../components/SettingsHeader";
-import { ChatMessage, MarkdownCellData } from "@/types";
-import { models } from "@/lib/azureService";
+import { ChatMessage, MarkdownCellData, models } from "@/types";
 interface MainPanelProps {
   selectedModel: keyof typeof models;
   setSelectedModel: React.Dispatch<React.SetStateAction<keyof typeof models>>;

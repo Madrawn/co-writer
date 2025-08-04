@@ -5,7 +5,7 @@ import {
   useControls,
 } from "react-zoom-pan-pinch";
 
-type PanzoomProps = React.PropsWithChildren<{}>;
+type PanzoomProps = React.PropsWithChildren;
 
 const PanzoomComponent: React.FC<PanzoomProps> = ({ children }) => {
   const Controls = () => {
@@ -16,9 +16,9 @@ const PanzoomComponent: React.FC<PanzoomProps> = ({ children }) => {
       setTransform(10, 10, 2, 600, "easeOut");
     }, []);
     const buttonClass =
-      "bg-gray-800 hover:bg-blue-700 rounded-lg shadow-md text-white font-bold py-2 px-4 ";
+      "bg-gray-700 hover:bg-blue-800 rounded-lg shadow-md text-white font-bold py-2 px-4 ";
     return (
-      <div className="tools space-x-2 p-2  ">
+      <div className="tools bg-gray-800 space-x-2 p-2 rounded-lg">
         <button onClick={() => zoomIn()} className={buttonClass}>
           Zoom In
         </button>
@@ -33,14 +33,14 @@ const PanzoomComponent: React.FC<PanzoomProps> = ({ children }) => {
   };
 
   return (
-    <div className="panzoom-component not-prose bg-gray-900 text-gray-200 rounded-lg shadow-lg overflow-hidden stroke-[hsl(0180 0% 80% / 1)]">
+    <div className="panzoom-component overflow-hidden not-prose bg-gray-900 text-gray-200 rounded-lg shadow-lg  stroke-[hsl(0180 0% 80% / 1)]">
       <TransformWrapper
         maxScale={5}
         initialScale={1}
         initialPositionX={0}
         initialPositionY={0}
       >
-        {({ zoomIn, zoomOut, setTransform, ...rest }) => (
+        {() => (
           <React.Fragment>
             <Controls />
             <TransformComponent

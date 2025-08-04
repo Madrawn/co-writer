@@ -44,13 +44,28 @@ export async function speakTextInChunks(
   voice: string = "alloy",
   maxConcurrent: number = 2
 ) {
-  // Split text into sentences while preserving punctuation
-  const sentences = text.split(/(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?|\!)\s+/g);
+  // Early exit if text is empty or only whitespace
+  if (!text || !text.trim()) {
+    return;
+  }
+
+  // Split text into sentences while preserving punctuation, and filter out empty sentences
+  const sentences = text
+    .split(/(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?|!)\s+/g)
+    .map(s => s.trim())
+    .filter(s => s.length > 0);
   const chunks: string[] = [];
-  
   // Group sentences into chunks (3 sentences per chunk)
   for (let i = 0; i < sentences.length; i += 3) {
-    chunks.push(sentences.slice(i, i + 3).join(' '));
+    const chunk = sentences.slice(i, i + 3).join(' ');
+    if (chunk.trim()) {
+      chunks.push(chunk);
+    }
+  }
+
+  // If there are no valid chunks, exit early
+  if (chunks.length === 0) {
+    return;
   }
 
   const audioQueue: {index: number, blob: Blob}[] = [];

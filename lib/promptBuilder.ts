@@ -1,13 +1,16 @@
-import type { ChatMessage, MarkdownCellData } from '../types';
+import type { ChatMessage, MarkdownCellData } from "../types";
 
 export const formatContext = (cells: MarkdownCellData[]): string => {
-    if (cells.length === 0) {
-        return "This is our shared scratchpad. It's currently empty.";
-    }
-    const content = cells.map(cell => 
+  if (cells.length === 0) {
+    return "This is our shared scratchpad. It's currently empty.";
+  }
+  const content = cells
+    .map(
+      (cell) =>
         `---CELL START (id: ${cell.id})---\n${cell.content}\n---CELL END---`
-    ).join('\n\n');
-    return `This is our shared scratchpad. Refer to it as the primary context for my query. Each cell has an ID.
+    )
+    .join("\n\n");
+  return `This is our shared scratchpad. Refer to it as the primary context for my query. Each cell has an ID.
 
 ---CONTEXT---
 ${content}
@@ -54,30 +57,33 @@ After the notebook context, you may receive a feedback message from the user, li
 `;
 
 export const buildPrompt = (
-    historyWithNewMessage: ChatMessage[],
-    cells: MarkdownCellData[],
-    feedback: string | null
-): { contents: any[], systemInstruction: string } => {
-    const historyForAPI = historyWithNewMessage.slice(0, -1).map(msg => ({
-        role: msg.role,
-        parts: [{ text: msg.content }]
-    }));
+  historyWithNewMessage: ChatMessage[],
+  cells: MarkdownCellData[],
+  feedback: string | null
+): {
+  contents: Partial<ChatMessage & { parts: { text: string }[] }>[];
+  systemInstruction: string;
+} => {
+  const historyForAPI = historyWithNewMessage.slice(0, -1).map((msg) => ({
+    role: msg.role,
+    parts: [{ text: msg.content }],
+  }));
 
-    const lastMessage = historyWithNewMessage[historyWithNewMessage.length - 1];
-    if (!lastMessage || lastMessage.role !== 'user') {
-        throw new Error('The last message in the history must be from the user.');
-    }
+  const lastMessage = historyWithNewMessage[historyWithNewMessage.length - 1];
+  if (!lastMessage || lastMessage.role !== "user") {
+    throw new Error("The last message in the history must be from the user.");
+  }
 
-    let context = formatContext(cells);
-    if (feedback) {
-        context += `\n\n${feedback}`;
-    }
-    const finalUserPrompt = `${context}\n\nMy query is: ${lastMessage.content}`;
+  let context = formatContext(cells);
+  if (feedback) {
+    context += `\n\n${feedback}`;
+  }
+  const finalUserPrompt = `${context}\n\nMy query is: ${lastMessage.content}`;
 
-    const contents = [
-        ...historyForAPI,
-        { role: 'user' as const, parts: [{ text: finalUserPrompt }] }
-    ];
+  const contents = [
+    ...historyForAPI,
+    { role: "user" as const, parts: [{ text: finalUserPrompt }] },
+  ];
 
-    return { contents, systemInstruction };
+  return { contents, systemInstruction };
 };

@@ -13,6 +13,7 @@
     "@azure/core-sse": "latest",
     "@azure/identity": "latest",
     "@google/genai": "^1.11.0",
+    "@next/eslint-plugin-next": "^15.4.4",
     "@panzoom/panzoom": "^4.6.0",
     "@types/react-syntax-highlighter": "^15.5.13",
     "mermaid": "^11.9.0",
@@ -30,6 +31,7 @@
     "remark-gfm": "^4.0.1"
   },
   "devDependencies": {
+    "@eslint/js": "^9.32.0",
     "@tailwindcss/postcss": "^4.1.11",
     "@tailwindcss/typography": "^0.5.16",
     "@testing-library/jest-dom": "^6.6.3",
@@ -44,10 +46,14 @@
     "autoprefixer": "^10.4.21",
     "eslint": "^9.32.0",
     "eslint-config-next": "15.4.4",
+    "eslint-plugin-react": "^7.37.5",
+    "globals": "^16.3.0",
+    "jiti": "^2.5.1",
     "jsdom": "^26.1.0",
     "postcss": "^8.5.6",
     "tailwindcss": "^4.1.11",
     "typescript": "~5.7.3",
+    "typescript-eslint": "^8.38.0",
     "vitest": "^3.2.4"
   }
 }

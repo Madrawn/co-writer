@@ -37,13 +37,14 @@ describe("POST /api/co-writer/chat", () => {
 
   it("returns 500 if Azure config missing", async () => {
     process.env.AZURE_API_KEY = "";
-    const req = { json: async () => ({}) } as any;
+    const req = { json: async () => ({}) } as unknown as Request;
     const res = await POST(req);
     expect(res instanceof NextResponse).toBe(true);
     let body = "";
-    // @ts-expect-error
+    // @ts-expect-error: NextResponse.body is a ReadableStream in runtime, but its type is not exposed in Next.js types for testing.
+    // This is safe in the test context because we know our mock returns a compatible object.
     const reader = res.body.getReader();
-    const { value, done } = await reader.read();
+    const { value } = await reader.read();
     if (value) {
       body += new TextDecoder().decode(value);
     }
@@ -54,24 +55,24 @@ describe("POST /api/co-writer/chat", () => {
   it("returns 400 if request body is invalid", async () => {
     const badReq = {
       json: vi.fn().mockRejectedValue(new Error("fail")),
-    } as any;
+    } as unknown as Request;
     const res = await POST(badReq);
     expect(res instanceof NextResponse).toBe(true);
     let body = "";
-    // @ts-ignore
+    // @ts-expect-error: res.body is a ReadableStream in the NextResponse, but TypeScript may not recognize this type in the test context
     const reader = res.body.getReader();
-    const { value, done } = await reader.read();
+    const { value } = await reader.read();
     if (value) {
       body += new TextDecoder().decode(value);
     }
     expect(body).toMatch(/Invalid request body/);
-    // @ts-ignore
     expect(res.status).toBe(400);
   });
 
   it("returns 500 if Azure API errors", async () => {
     // Patch the model client to throw
     const ModelClient = (await import("@azure-rest/ai-inference")).default;
+    // @ts-expect-error: ModelClient is a mocked function
     ModelClient.mockImplementation(() => ({
       path: () => ({
         post: vi.fn().mockImplementation(() => {
@@ -86,13 +87,13 @@ describe("POST /api/co-writer/chat", () => {
         feedback: "",
         modelName: "gpt-4.1",
       }),
-    } as any;
+    } as unknown as Request;
     const res = await POST(req);
     expect(res instanceof NextResponse).toBe(true);
     let body = "";
-    // @ts-ignore
+    // @ts-expect-error: res.body is a ReadableStream in the NextResponse, but TypeScript may not recognize this type in the test context
     const reader = res.body.getReader();
-    const { value, done } = await reader.read();
+    const { value } = await reader.read();
     if (value) {
       body += new TextDecoder().decode(value);
     }

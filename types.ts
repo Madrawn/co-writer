@@ -1,4 +1,3 @@
-import { models } from "./lib/azureService";
 
 export interface MarkdownCellData {
   id: string;
@@ -11,7 +10,30 @@ export interface ProposedChange {
   targetCellId: string; // 'new' or an existing cell ID
   newContent: string;
 }
-
+export const models = {
+  "DeepSeek-R1-0528": {
+    // client: () =>
+    //   ModelClient(endpoint, new AzureKeyCredential(apiKey), {
+    //     apiVersion: "2024-05-01-preview",
+    //   }),
+  },
+  "gpt-4.1": {
+    // client: () =>
+    //   ModelClient(
+    //     endpoint_oa + "/deployments/gpt-4.1/",
+    //     new AzureKeyCredential(apiKey),
+    //     options
+    //   ),
+  },
+  "o4-mini": {
+    // client: () =>
+    //   ModelClient(
+    //     endpoint_oa + "/deployments/o4-mini/",
+    //     new AzureKeyCredential(apiKey),
+    //     options
+    //   ),
+  },
+};
 export interface ChatMessage {
   id: string;
   role: MessageRole;

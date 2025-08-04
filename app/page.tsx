@@ -3,14 +3,12 @@ import React, { ReactElement, useCallback } from "react";
 import ChatPanel from "../components/ChatPanel";
 
 import { useCoWriter } from "../hooks/useCoWriter";
-import { models } from "../lib/azureService";
+import { models } from "../types";
 import { retrieveFiles } from "./retrieveFiles";
 import MainPanel from "@/components/MainPanel";
 
 export default function HomePage(): ReactElement {
   // Import models from azureService
-  // @ts-ignore
-  // eslint-disable-next-line
   const [selectedModel, setSelectedModel] = React.useState<keyof typeof models>(
     Object.keys(models)[0] as keyof typeof models
   );
@@ -40,13 +38,13 @@ export default function HomePage(): ReactElement {
   } = useCoWriter(selectedModel, 0, ttsEnabled);
   const handleSendMessageCB = useCallback(
     (message: string) => handleSendMessage(message),
-    [selectedModel, ttsEnabled]
+    [] // No dependencies needed
   );
   const [menuOpen, setMenuOpen] = React.useState<boolean>(false);
   const handleInsertFiles = useCallback(
     async (isFolder: boolean = false): Promise<void> => {
       try {
-        let files = await retrieveFiles(isFolder);
+        const files = await retrieveFiles(isFolder);
 
         for (const { file, path } of files) {
           const content = await file.text();

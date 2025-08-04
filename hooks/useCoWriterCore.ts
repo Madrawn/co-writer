@@ -1,14 +1,16 @@
 // hooks/useCoWriterCore.ts
-import { useState, useEffect } from 'react';
-import { CoWriter } from '../lib/coWriter';
-import { CoWriterState } from "@/types";
-import { streamChatResponse } from '../lib/backendService'; // Updated import
-import { models } from '@/lib/azureService';
+import { useState, useEffect } from "react";
+import { CoWriter } from "../lib/coWriter";
+import { CoWriterState, models } from "@/types";
+import { streamChatResponse } from "../lib/backendService"; // Updated import
 
 // A single, shared instance of the CoWriter class
 let coWriterInstance: CoWriter | null = null;
 
-export const useCoWriterCore = (modelName: keyof typeof models, selectedNotebook: number) => {
+export const useCoWriterCore = (
+  modelName: keyof typeof models,
+  selectedNotebook: number
+) => {
   const [state, setState] = useState<CoWriterState>(() => {
     if (!coWriterInstance) {
       coWriterInstance = new CoWriter(streamChatResponse, modelName);
@@ -43,7 +45,7 @@ export const useCoWriterCore = (modelName: keyof typeof models, selectedNotebook
     deleteCell: coWriterInstance!.deleteCell,
     updateCell: coWriterInstance!.updateCell,
     updateCellId: coWriterInstance!.updateCellId,
-    handleSendMessage: (message: string) => 
+    handleSendMessage: (message: string) =>
       coWriterInstance!.handleSendMessage(message, modelName),
     handleApplyChanges: coWriterInstance!.handleApplyChanges,
     handleRejectChanges: coWriterInstance!.handleRejectChanges,

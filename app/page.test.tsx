@@ -1,9 +1,6 @@
-import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import HomePage from "./page";
-import type { MarkdownCellData, ChatMessage } from "../types";
-import { CoWriter } from "../lib/coWriter";
 const addNotebookSpy = vi.fn();
 const removeNotebookSpy = vi.fn();
 const setSelectedNotebookSpy = vi.fn();
@@ -23,14 +20,14 @@ vi.mock("../lib/coWriter", async () => {
         removeNotebook: removeNotebookSpy,
         // --- Mock other methods used by the hook ---
         getState: () => ({
-          notebooks: [[{ id: "mock-cell", content: "Initial mock notebook" }]],
+          notebooks: [[{ id: "mock-cell", content: "Initial mock notebook" }], [{ id: "mock-cell2", content: "second mock notebook" }]],
           chatMessages: [],
           isLoading: false,
           selectedNotebook: 0,
         }),
         subscribe: vi.fn(() => () => {}), // A subscribe that returns an empty unsubscribe function
         setModelName: vi.fn(),
-        setSelectedNotebook: setSelectedNotebookSpy,
+        selectNotebookByIndex: setSelectedNotebookSpy,
         addCell: vi.fn(),
         deleteCell: vi.fn(),
         updateCell: vi.fn(),
@@ -54,9 +51,6 @@ vi.mock("../lib/coWriter", async () => {
 // vi.mock("../components/icons", () => ({
 //   PlusIcon: (props: any) => <svg data-testid="plus-icon" {...props} />,
 // }));
-vi.mock("../lib/azureService", () => ({
-  models: { "o4-mini": {}, "gpt-4.1": {} },
-}));
 
 // Mock localStorage
 const localStorageMock = (() => {

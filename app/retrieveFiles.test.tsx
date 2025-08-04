@@ -17,7 +17,7 @@ describe("retrieveFiles", () => {
       getFile: vi.fn().mockResolvedValue(mockFile),
       name: "file1.txt",
     };
-    (window as any).showOpenFilePicker = vi.fn().mockResolvedValue([mockHandle]);
+    (window as unknown as { showOpenFilePicker: unknown }).showOpenFilePicker = vi.fn().mockResolvedValue([mockHandle]);
 
     const files = await retrieveFiles(false);
     expect(files).toHaveLength(1);
@@ -63,7 +63,7 @@ describe("retrieveFiles", () => {
       },
     };
 
-    (window as any).showDirectoryPicker = vi.fn().mockResolvedValue(dirHandle);
+    (window as unknown as { showDirectoryPicker: unknown }).showDirectoryPicker = vi.fn().mockResolvedValue(dirHandle);
 
     const files = await retrieveFiles(true);
     // Should flatten all files with correct paths
@@ -75,13 +75,13 @@ describe("retrieveFiles", () => {
   });
 
   it("returns empty array if no files selected", async () => {
-    (window as any).showOpenFilePicker = vi.fn().mockResolvedValue([]);
+    (window as unknown as { showOpenFilePicker: unknown }).showOpenFilePicker = vi.fn().mockResolvedValue([]);
     const files = await retrieveFiles(false);
     expect(files).toEqual([]);
   });
 
   it("throws if file picker fails", async () => {
-    (window as any).showOpenFilePicker = vi.fn().mockRejectedValue(new Error("fail"));
+    (window as unknown as { showOpenFilePicker: unknown }).showOpenFilePicker = vi.fn().mockRejectedValue(new Error("fail"));
     await expect(retrieveFiles(false)).rejects.toThrow("fail");
   });
 });

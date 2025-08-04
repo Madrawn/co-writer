@@ -36,10 +36,16 @@ export async function POST(req: Request) {
 
             const azureMessages = [
                 { role: "system", content: systemInstruction },
-                ...contents.map(item => ({
-                    role: item.role === "model" ? "assistant" : item.role,
-                    content: item.parts[0].text
-                })),
+                ...contents
+                    .map(item => {
+                        const role = item.role === "model" ? "assistant" : item.role;
+                        const content = item.parts?.[0]?.text;
+                        if (typeof role === "string" && typeof content === "string") {
+                            return { role, content };
+                        }
+                        return null;
+                    })
+                    .filter((msg): msg is { role: string; content: string } => msg !== null)
             ];
 
             const azureResponse = await client.path("/chat/completions").post({

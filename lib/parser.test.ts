@@ -4,7 +4,6 @@ import { parseGeminiResponse } from './parser';
 // lib/parser.test.ts
 
 // Mock ProposedChange type for type safety (if needed)
-type ProposedChange = { targetCellId: string; newContent: string };
 
 describe('parseGeminiResponse - cleanContent', () => {
   it('returns the whole text if there are no change blocks', () => {

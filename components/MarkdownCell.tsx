@@ -5,7 +5,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { vscDarkPlus } from "react-syntax-highlighter/dist/cjs/styles/prism";
+import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
 import mermaid from "mermaid";
 import MermaidDiagram from "./MermaidDiagram";
 import "./MarkdownCell.css";
@@ -54,10 +54,11 @@ const MarkdownCell: React.FC<MarkdownCellProps> = ({
   const baseClasses =
     "prose prose-slate prose-invert max-w-none rounded-lg lg:p-4 min-h-[5rem] cursor-pointer transition-all duration-300 relative group";
   const MemoizedDiffViewer = memo(ReactDiffViewer);
+  // const MemoizedMarkdown = ReactMarkdown;
   const MemoizedMarkdown = memo(ReactMarkdown);
   // Memoize plugins array to prevent reference changes
-  const plugins = useMemo(() => [remarkGfm], []);
-  const rawPlugins = useMemo(() => [rehypeRaw], []);
+  const plugins = useMemo(() => [remarkGfm], [remarkGfm]);
+  const rawPlugins = useMemo(() => [rehypeRaw], [rehypeRaw]);
   // State for rendered Mermaid SVGs by code content
   const [mermaidSvgs, setMermaidSvgs] = useState<Record<string, string>>({});
   // Render Mermaid code blocks to SVG and store in state
@@ -72,7 +73,9 @@ const MarkdownCell: React.FC<MarkdownCellProps> = ({
     } catch (e) {
       setMermaidSvgs((prev) => ({
         ...prev,
-        [code]: `<pre style='color:red'>Mermaid render error</pre>`,
+        [code]: `<pre style='color:red'>Mermaid render error: ${
+          (e as Error).message
+        }</pre>`,
       }));
     }
   };
@@ -165,6 +168,7 @@ const MarkdownCell: React.FC<MarkdownCellProps> = ({
             splitView={splitView}
             renderContent={highlightSyntax}
             useDarkTheme={true}
+            // Using WORDS for more granular and readable diffs in markdown cells
             compareMethod={DiffMethod.WORDS}
             // styles={{
             //   content: "not-prose",
@@ -203,29 +207,24 @@ const MarkdownCell: React.FC<MarkdownCellProps> = ({
           rehypePlugins={rawPlugins}
           components={{
             code: ({
-              node,
               inline,
               className,
               children,
               ...props
-            }: {
-              node?: any;
-              inline?: boolean;
-              className?: string;
-              children?: React.ReactNode;
-              [key: string]: any;
-            }) => {
+            }: React.ComponentProps<"code"> & { inline?: boolean }) => {
+              // Remove ref from props to avoid type error with SyntaxHighlighter
+              // eslint-disable-next-line @typescript-eslint/no-unused-vars
+              const { ref, ...restProps } = props;
               const match = /language-(\w+)/.exec(className || "");
               const language = match ? match[1] : "";
               if (language === "mermaid") {
                 const code = String(children).replace(/\n$/, "");
                 useEffect(() => {
                   renderMermaidToSvg(code);
-                  // eslint-disable-next-line react-hooks/exhaustive-deps
                 }, [code]);
                 if (mermaidSvgs[code]) {
                   return (
-                    <PanzoomComponent>
+                    <PanzoomComponent key={code} {...restProps}>
                       <MermaidDiagram svg={mermaidSvgs[code]} />
                     </PanzoomComponent>
                   );
@@ -240,12 +239,12 @@ const MarkdownCell: React.FC<MarkdownCellProps> = ({
                   style={vscDarkPlus}
                   language={language}
                   PreTag="div"
-                  {...props}
+                  // {...restProps}
                 >
                   {String(children).replace(/\n$/, "")}
                 </SyntaxHighlighter>
               ) : (
-                <code className={className} {...props}>
+                <code className={className} {...restProps}>
                   {children}
                 </code>
               );

@@ -20,6 +20,7 @@ const ChatMessagesList: React.FC<ChatMessagesListProps> = ({
 }) => (
   <div className="flex-1 h-full p-6 overflow-y-auto space-y-4">
     {messages.map((msg) => {
+
       const showChangeCard =
         msg.role === "model" &&
         msg.proposedChanges &&
@@ -44,7 +45,7 @@ const ChatMessagesList: React.FC<ChatMessagesListProps> = ({
       return <MessageBubble key={msg.id} msg={msg}></MessageBubble>;
     })}
     {isLoading && messages[messages.length - 1]?.role === "user" && (
-      <div className="flex justify-start">
+      <div role="status" className="flex justify-start">
         <div className="max-w-md rounded-xl px-4 py-3 bg-gray-700">
           <div className="flex items-center justify-center space-x-2">
             <div className="w-2 h-2 rounded-full bg-gray-400 animate-pulse"></div>

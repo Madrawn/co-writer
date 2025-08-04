@@ -4,8 +4,8 @@ import type {
   StreamChatFn,
   CoWriterState,
   StateListener,
+  models
 } from "../types";
-import { models } from "./azureService";
 import { parseGeminiResponse } from "./parser";
 
 const LOCAL_STORAGE_KEY = "co-writer-notebooks";

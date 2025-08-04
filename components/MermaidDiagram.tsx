@@ -8,7 +8,7 @@ type MermaidDiagramProps = {
 
 const MermaidDiagram = ({ svg }: MermaidDiagramProps) => {
   const svgLoaderElement = (
-    <div className="mermaid-diagram not-prose">
+    <div className="mermaid-diagram not-prose" data-testid="mermaid-diagram-wrapper">
       {/* Using ReactSvgPanZoomLoader to handle SVG rendering and pan/zoom */}
       <ReactSvgPanZoomLoader
         svgXML={svg}

@@ -1,13 +1,14 @@
 "use client";
+import { MarkdownCellData } from "@/types";
 import NotebookSelector from "../components/NotebookSelector";
-import { models } from "../lib/azureService";
+import { models } from "../types";
 import React from "react";
 
 // Types for SettingsHeader props
 interface SettingsHeaderProps {
     selectedModel: keyof typeof models;
     setSelectedModel: React.Dispatch<React.SetStateAction<keyof typeof models>>;
-    notebooks: any[]; // Replace 'any' with the actual notebook type if available
+    notebooks: MarkdownCellData[][];
     addNotebook: () => void;
     removeNotebook: (index: number) => void;
     setNotebookIndex: (index: number) => void;

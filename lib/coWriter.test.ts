@@ -10,10 +10,10 @@ const mockUUID = (() => {
   return () => `uuid-${++i}`;
 })();
 if (!globalThis.crypto) {
-  // @ts-ignore
   globalThis.crypto = {} as Crypto;
 }
-(globalThis.crypto as any).randomUUID = mockUUID;
+globalThis.crypto.randomUUID =
+  mockUUID as unknown as typeof globalThis.crypto.randomUUID;
 const mockLocalStorage = (() => {
   let store: Record<string, string> = {};
   return {
@@ -26,7 +26,7 @@ const mockLocalStorage = (() => {
     },
   };
 })();
-globalThis.localStorage = mockLocalStorage as any;
+globalThis.localStorage = mockLocalStorage as unknown as Storage;
 
 // Patch parseGeminiResponse
 vi.mock("./parser", () => ({
@@ -89,7 +89,7 @@ describe("CoWriter.handleSendMessage", () => {
     const streamChatFn = vi.fn().mockResolvedValue(makeStream(["A"]));
     const coWriter = new CoWriter(streamChatFn, "gpt-4.1");
     coWriter["state"].chatMessages = [];
-    let loadingStates: boolean[] = [];
+    const loadingStates: boolean[] = [];
     coWriter.subscribe((s) => loadingStates.push(s.isLoading));
     await coWriter.handleSendMessage("msg");
     console.log(loadingStates);
@@ -140,12 +140,12 @@ describe("CoWriter.handleSendMessage", () => {
     const streamChatFn = vi.fn().mockResolvedValue(makeStream(["x"]));
     const coWriter = new CoWriter(streamChatFn, "gpt-4.1");
     coWriter["state"].chatMessages = [];
-    await coWriter.handleSendMessage("msg", "overrideModel" as any);
+    await coWriter.handleSendMessage("msg", "o4-mini");
     expect(streamChatFn).toHaveBeenCalledWith(
       expect.any(Array),
       expect.any(Array),
       null,
-      "overrideModel"
+      "o4-mini"
     );
   });
   describe("CoWriter cell operations", () => {
@@ -457,8 +457,8 @@ describe("CoWriter.handleSendMessage", () => {
     it("updates the modelName property", () => {
       const streamChatFn = vi.fn();
       const coWriter = new CoWriter(streamChatFn, "gpt-4.1");
-      coWriter.setModelName("modelB" as any);
-      expect(coWriter["modelName"]).toBe("modelB");
+      coWriter.setModelName("o4-mini");
+      expect(coWriter["modelName"]).toBe("o4-mini");
     });
   });
   describe("CoWriter", () => {
@@ -554,10 +554,10 @@ describe("CoWriter.handleSendMessage", () => {
         content: "test",
         proposedChanges: [{ targetCellId: "new", newContent: "abc" }],
       };
-      // @ts-ignore
+      // Add to state directly for testing
       cw.getState().chatMessages.push(msg);
       // Actually update state
-      (cw as any).state.chatMessages.push(msg);
+      (cw as unknown as { state: { chatMessages: ChatMessage[] } }).state.chatMessages.push(msg);
 
       cw.handleApplyChanges("msg1");
       const appliedMsg = cw

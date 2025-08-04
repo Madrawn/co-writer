@@ -1,4 +1,14 @@
 "use client";
+
+type OpenFilePickerOptions = {
+  multiple?: boolean;
+};
+
+type WindowWithFileSystemAccess = Window & {
+  showDirectoryPicker?: () => Promise<FileSystemDirectoryHandle>;
+  showOpenFilePicker?: (options?: OpenFilePickerOptions) => Promise<FileSystemFileHandle[]>;
+};
+
 const traverseDirectory = async (
   dirHandle: FileSystemDirectoryHandle,
   path: string = ""
@@ -22,14 +32,18 @@ export async function retrieveFiles(isFolder: boolean) {
   let files = [];
 
   if (isFolder) {
-    const dirHandle: FileSystemDirectoryHandle = await (
-      window as any
-    ).showDirectoryPicker();
+    const win = window as unknown as WindowWithFileSystemAccess;
+    if (!win.showDirectoryPicker) {
+      throw new Error('showDirectoryPicker is not supported in this browser.');
+    }
+    const dirHandle: FileSystemDirectoryHandle = await win.showDirectoryPicker();
     files = await traverseDirectory(dirHandle);
   } else {
-    const fileHandles: FileSystemFileHandle[] = await (
-      window as any
-    ).showOpenFilePicker({ multiple: true });
+    const win = window as unknown as WindowWithFileSystemAccess;
+    if (!win.showOpenFilePicker) {
+      throw new Error('showOpenFilePicker is not supported in this browser.');
+    }
+    const fileHandles: FileSystemFileHandle[] = await win.showOpenFilePicker({ multiple: true });
     files = await Promise.all(
       fileHandles.map(async (handle: FileSystemFileHandle) => ({
         file: await handle.getFile(),

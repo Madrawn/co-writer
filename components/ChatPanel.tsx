@@ -1,4 +1,14 @@
 "use client";
+// ...existing code...
+// Type definitions for browser speech recognition events (not in standard TS DOM lib)
+type SpeechRecognitionEvent = Event & {
+  resultIndex: number;
+  results: SpeechRecognitionResultList;
+};
+type SpeechRecognitionErrorEvent = Event & {
+  error: string;
+  message: string;
+};
 import React, { useState, useRef, useEffect, memo } from "react";
 import type { ChatMessage } from "../types";
 import "./ChatPanel.css";
@@ -42,7 +52,26 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
   >("auto-stop");
   const [speechLang, setSpeechLang] = useState<"en-US" | "de-DE">("en-US");
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const recognitionRef = useRef<any>(null);
+  interface WebkitSpeechRecognition extends EventTarget {
+    start(): void;
+    stop(): void;
+    abort(): void;
+    lang: string;
+    continuous: boolean;
+    interimResults: boolean;
+    onaudioend?: (event: Event) => void;
+    onaudiostart?: (event: Event) => void;
+    onend?: (event: Event) => void;
+    onerror?: (event: SpeechRecognitionErrorEvent) => void;
+    onnomatch?: (event: Event) => void;
+    onresult?: (event: SpeechRecognitionEvent) => void;
+    onsoundend?: (event: Event) => void;
+    onsoundstart?: (event: Event) => void;
+    onspeechend?: (event: Event) => void;
+    onspeechstart?: (event: Event) => void;
+    onstart?: (event: Event) => void;
+  }
+  const recognitionRef = useRef<WebkitSpeechRecognition | null>(null);
   const finalTranscriptRef = useRef("");
   const silenceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -71,7 +100,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
   // NEW: Effect to pause recognition during TTS and model responses
   useEffect(() => {
     if ((isLoading || isTtsSpeaking) && isListening) {
-      recognitionRef.current.stop();
+      if (recognitionRef.current) recognitionRef.current.stop();
     }
   }, [isLoading, isTtsSpeaking, isListening]);
 
@@ -82,12 +111,12 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
       return;
     }
 
-    const recognition = new (window as any).webkitSpeechRecognition();
+    const recognition = new (window as typeof window & { webkitSpeechRecognition: new () => WebkitSpeechRecognition }).webkitSpeechRecognition();
     recognition.continuous = true;
     recognition.interimResults = true;
     recognition.lang = speechLang;
 
-    recognition.onresult = (event: any) => {
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
       let interimTranscript = "";
       for (let i = event.resultIndex; i < event.results.length; i++) {
         if (event.results[i].isFinal) {
@@ -144,7 +173,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
           setInterimSpeech("");
           finalTranscriptRef.current = "";
           try {
-            recognitionRef.current.start();
+            if (recognitionRef.current) recognitionRef.current.start();
           } catch (error) {
             console.error("Recognition restart error:", error);
             setIsListening(false);
@@ -155,7 +184,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
       }
     };
 
-    recognition.onerror = (event: any) => {
+    recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
       console.error("Speech recognition error:", event.error);
       setIsListening(false);
       setInterimSpeech("");
@@ -198,13 +227,13 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
 
   const toggleListening = () => {
     if (isListening) {
-      recognitionRef.current.stop();
+      if (recognitionRef.current) recognitionRef.current.stop();
       setCountdown(null);
     } else {
       finalTranscriptRef.current = "";
       setInput("");
       setInterimSpeech("");
-      recognitionRef.current.start();
+      if (recognitionRef.current) recognitionRef.current.start();
       setIsListening(true);
     }
   };
@@ -212,7 +241,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
   const toggleRecordingMode = () => {
     // NEW: Immediately disable continuous mode
     if (isListening && recordingMode === "continuous") {
-      recognitionRef.current.stop();
+      if (recognitionRef.current) recognitionRef.current.stop();
     }
     setRecordingMode((prev) =>
       prev === "auto-stop" ? "continuous" : "auto-stop"
@@ -249,18 +278,20 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
     ) {
       // browser's recognition might already be running - first try to stop if needed
       try {
-        recognitionRef.current.stop();
-      } catch (e) {}
+        if (recognitionRef.current) recognitionRef.current.stop();
+      } catch {
+        // ignore
+      }
       // restart after short delay to prevent race with onend handler
       setTimeout(() => {
         try {
-          recognitionRef.current.start();
-        } catch (err) {
+          if (recognitionRef.current) recognitionRef.current.start();
+        } catch {
           // Recognition might already be started; ignore
         }
       }, 100);
     }
-    // eslint-disable-next-line
+     
   }, [isLoading, isTtsSpeaking]);
 
   return (

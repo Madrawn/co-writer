@@ -1,8 +1,10 @@
 "use client";
 import React, { memo } from "react";
 
+import { MarkdownCellData } from "../types";
+
 interface NotebookSelectorProps {
-    notebooks: any[]; // Replace 'any' with a more specific type if available
+    notebooks: MarkdownCellData[][];
     addNotebook: () => void;
     removeNotebook: (index: number) => void;
     setNotebookIndex: (index: number) => void;
@@ -21,7 +23,7 @@ const NotebookSelector: React.FC<NotebookSelectorProps> = (props) => {
                 onChange={(e: React.ChangeEvent<HTMLSelectElement>) => props.setNotebookIndex(Number(e.target.value))}
                 className="bg-gray-700 text-gray-200 rounded px-2 py-1"
             >
-                {props.notebooks.map((_: any, idx: number) => (
+                {props.notebooks.map((_, idx: number) => (
                     <option key={idx} value={idx}>{`Notebook ${idx + 1}`}</option>
                 ))}
             </select>
