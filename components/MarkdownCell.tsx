@@ -1,17 +1,20 @@
 "use client";
-import React, { useRef, useEffect, useState } from "react";
-import ReactDiffViewer from "react-diff-viewer";
+import React, { useRef, useEffect, useState, memo, useMemo } from "react";
+import ReactDiffViewer, { DiffMethod } from "react-diff-viewer";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/cjs/styles/prism";
 import mermaid from "mermaid";
+import MermaidDiagram from "./MermaidDiagram";
 import "./MarkdownCell.css";
 
 import { TrashIcon, PencilIcon } from "./icons";
 import type { MarkdownCellData } from "@/types";
-import { CellIdLabel } from "./CellIdLabel";
+import CellIdLabel from "./CellIdLabel";
+import MakeHighlightSyntax from "./HighlightSyntax";
+import PanzoomComponent from "./PanzoomComponent";
 
 export interface MarkdownCellProps {
   cell: MarkdownCellData;
@@ -23,6 +26,16 @@ export interface MarkdownCellProps {
   onUpdateCellId: (oldId: string, newId: string) => void;
   proposedChange?: string; // New content proposed for this cell, if any
 }
+const defaultRendererSettings: {
+  defaultRenderer: "dagre-d3" | "dagre-wrapper" | "elk";
+} = { defaultRenderer: "elk" };
+mermaid.initialize({
+  startOnLoad: false,
+  theme: "dark",
+  flowchart: defaultRendererSettings,
+  state: defaultRendererSettings,
+  class: defaultRendererSettings,
+});
 
 const MarkdownCell: React.FC<MarkdownCellProps> = ({
   cell,
@@ -38,6 +51,31 @@ const MarkdownCell: React.FC<MarkdownCellProps> = ({
   const [idInput, setIdInput] = useState(cell.id);
   const editRef = useRef<HTMLDivElement>(null);
   const [splitView, setSplitView] = useState(false);
+  const baseClasses =
+    "prose prose-slate prose-invert max-w-none rounded-lg lg:p-4 min-h-[5rem] cursor-pointer transition-all duration-300 relative group";
+  const MemoizedDiffViewer = memo(ReactDiffViewer);
+  const MemoizedMarkdown = memo(ReactMarkdown);
+  // Memoize plugins array to prevent reference changes
+  const plugins = useMemo(() => [remarkGfm], []);
+  const rawPlugins = useMemo(() => [rehypeRaw], []);
+  // State for rendered Mermaid SVGs by code content
+  const [mermaidSvgs, setMermaidSvgs] = useState<Record<string, string>>({});
+  // Render Mermaid code blocks to SVG and store in state
+  const renderMermaidToSvg = async (code: string) => {
+    if (mermaidSvgs[code]) return; // Already rendered
+    try {
+      const { svg } = await mermaid.render(
+        `mermaid-${Math.random().toString(36).slice(2)}`,
+        code
+      );
+      setMermaidSvgs((prev) => ({ ...prev, [code]: svg }));
+    } catch (e) {
+      setMermaidSvgs((prev) => ({
+        ...prev,
+        [code]: `<pre style='color:red'>Mermaid render error</pre>`,
+      }));
+    }
+  };
 
   useEffect(() => {
     if (isEditing && editRef.current) {
@@ -53,28 +91,7 @@ const MarkdownCell: React.FC<MarkdownCellProps> = ({
     }
   }, [isEditing]);
 
-  useEffect(() => {
-    async function initializeMermaid() {
-      if (!isEditing) {
-        const defaultRendererSettings: {
-          defaultRenderer: "dagre-d3" | "dagre-wrapper" | "elk";
-        } = { defaultRenderer: "elk" };
-        // mermaid.initialize({ startOnLoad: true });
-        // mermaid.contentLoaded();
-        mermaid.initialize({
-          startOnLoad: false,
-          theme: "dark",
-          flowchart: defaultRendererSettings,
-          state: defaultRendererSettings,
-          class: defaultRendererSettings,
-        });
-        await mermaid.run({
-          querySelector: ".mermaid",
-        });
-      }
-    }
-    initializeMermaid();
-  });
+  // No longer need to run Mermaid globally; handled per code block
 
   if (isEditing) {
     return (
@@ -121,52 +138,12 @@ const MarkdownCell: React.FC<MarkdownCellProps> = ({
 
   // If a proposed change exists, show a diff viewer instead of the normal markdown
   if (proposedChange) {
-    const baseClasses =
-      "rounded-lg lg:p-4 min-h-[5rem] cursor-pointer transition-all duration-300 relative group";
     const highlightClasses = isHighlighted
       ? "border-2 border-yellow-400 bg-gray-800 shadow-lg shadow-yellow-500/10"
       : "bg-gray-800/70 border border-gray-700 hover:border-blue-500";
     // Stateful syntax highlighter for code blocks in diff
-    const makeHighlightSyntax = () => {
-      let lang: string | null = null;
-      let inside = false;
-      return (line: string) => {
-        // Detect code block start: ```lang
-        const codeBlockStart = line.match(/^```([a-zA-Z0-9]*)/);
-        if (codeBlockStart) {
-          lang = codeBlockStart[1] || "";
-          inside = true;
-          // Render the code block marker as plain text
-          return <span className="code-block-marker">{line}</span>;
-        }
-        // Detect code block end: ```
-        if (inside && line.trim() === "```") {
-          lang = null;
-          inside = false;
-          return <span className="code-block-marker">{line}</span>;
-        }
-        // If inside a code block, highlight with the detected language
-        if (inside && lang) {
-          return (
-            <SyntaxHighlighter
-              style={vscDarkPlus}
-              language={lang}
-              customStyle={{
-                display: "inline",
-                background: "none",
-                padding: 0,
-              }}
-              PreTag="span"
-            >
-              {line}
-            </SyntaxHighlighter>
-          );
-        }
-        // Otherwise, render as plain text
-        return <span>{line}</span>;
-      };
-    };
-    const highlightSyntax = makeHighlightSyntax();
+
+    const highlightSyntax = MakeHighlightSyntax();
     return (
       <div
         data-testid={cell.id}
@@ -181,13 +158,20 @@ const MarkdownCell: React.FC<MarkdownCellProps> = ({
             {splitView ? "Side-by-Side" : "Inline"}
           </button>
         </div>
-        <ReactDiffViewer
-          oldValue={cell.content}
-          newValue={proposedChange}
-          splitView={splitView}
-          renderContent={highlightSyntax}
-          useDarkTheme={true}
-        />
+        <div className="not-prose">
+          <MemoizedDiffViewer
+            oldValue={cell.content}
+            newValue={proposedChange}
+            splitView={splitView}
+            renderContent={highlightSyntax}
+            useDarkTheme={true}
+            compareMethod={DiffMethod.WORDS}
+            // styles={{
+            //   content: "not-prose",
+            //   diffContainer: "not-prose",
+            // }}
+          />
+        </div>
         <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex space-x-2">
           <PencilIcon className="w-5 h-5 text-gray-500" />
         </div>
@@ -203,8 +187,6 @@ const MarkdownCell: React.FC<MarkdownCellProps> = ({
     );
   }
 
-  const baseClasses =
-    "rounded-lg lg:p-4 min-h-[5rem] cursor-pointer transition-all duration-300 relative group";
   const highlightClasses = isHighlighted
     ? "border-2 border-yellow-400 bg-gray-800 shadow-lg shadow-yellow-500/10"
     : "bg-gray-800/70 border border-gray-700 hover:border-blue-500";
@@ -212,13 +194,13 @@ const MarkdownCell: React.FC<MarkdownCellProps> = ({
   return (
     <div
       data-testid={cell.id}
-      onClick={() => onStartEditing(cell.id)}
+      onDoubleClick={() => onStartEditing(cell.id)}
       className={`${baseClasses} ${highlightClasses}`}
     >
       <div className="max-w-none prose-p:text-gray-300 prose-headings:text-gray-100 prose-strong:text-gray-200 prose-code:text-pink-400 prose-pre:bg-gray-900/50 pb-4">
-        <ReactMarkdown
-          remarkPlugins={[remarkGfm]}
-          rehypePlugins={[rehypeRaw]}
+        <MemoizedMarkdown
+          remarkPlugins={plugins}
+          rehypePlugins={rawPlugins}
           components={{
             code: ({
               node,
@@ -236,10 +218,21 @@ const MarkdownCell: React.FC<MarkdownCellProps> = ({
               const match = /language-(\w+)/.exec(className || "");
               const language = match ? match[1] : "";
               if (language === "mermaid") {
+                const code = String(children).replace(/\n$/, "");
+                useEffect(() => {
+                  renderMermaidToSvg(code);
+                  // eslint-disable-next-line react-hooks/exhaustive-deps
+                }, [code]);
+                if (mermaidSvgs[code]) {
+                  return (
+                    <PanzoomComponent>
+                      <MermaidDiagram svg={mermaidSvgs[code]} />
+                    </PanzoomComponent>
+                  );
+                }
+                // Show loading or fallback
                 return (
-                  <div className="mermaid" {...props}>
-                    {children}
-                  </div>
+                  <div className="mermaid-loading">Rendering diagram...</div>
                 );
               }
               return !inline && match ? (
@@ -260,7 +253,7 @@ const MarkdownCell: React.FC<MarkdownCellProps> = ({
           }}
         >
           {cell.content || "Click to edit..."}
-        </ReactMarkdown>
+        </MemoizedMarkdown>
       </div>
       <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex space-x-2">
         <PencilIcon className="w-5 h-5 text-gray-500" />
@@ -277,4 +270,4 @@ const MarkdownCell: React.FC<MarkdownCellProps> = ({
   );
 };
 
-export default MarkdownCell;
+export default memo(MarkdownCell);

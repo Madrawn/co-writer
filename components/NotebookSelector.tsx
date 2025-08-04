@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { memo } from "react";
 
 interface NotebookSelectorProps {
     notebooks: any[]; // Replace 'any' with a more specific type if available
@@ -9,7 +9,7 @@ interface NotebookSelectorProps {
     selectedNotebook: number;
 }
 
-export default function NotebookSelector(props: NotebookSelectorProps) {
+const NotebookSelector: React.FC<NotebookSelectorProps> = (props) => {
     return (
         <div className="mb-4 flex items-center gap-2">
             <label htmlFor="notebook-select" className="text-gray-300 mr-2">
@@ -43,3 +43,5 @@ export default function NotebookSelector(props: NotebookSelectorProps) {
         </div>
     );
 }
+
+export default memo(NotebookSelector);

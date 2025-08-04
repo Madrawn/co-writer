@@ -1,6 +1,6 @@
 "use client";
 import { MarkdownCellData } from "@/types";
-import React from "react";
+import React, { memo } from "react";
 import "./CellIdLabel.css";
 
 interface CellIdLabelProps {
@@ -11,7 +11,7 @@ interface CellIdLabelProps {
   cell: MarkdownCellData;
   onUpdateCellId: (oldId: string, newId: string) => void;
 }
-export function CellIdLabel(props: CellIdLabelProps) {
+const CellIdLabel: React.FC<CellIdLabelProps> = (props) => {
   return (
     <div
       onClick={(e) => e.stopPropagation()}
@@ -68,4 +68,6 @@ export function CellIdLabel(props: CellIdLabelProps) {
       )}
     </div>
   );
-}
+};
+
+export default memo(CellIdLabel)  ;

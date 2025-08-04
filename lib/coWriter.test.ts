@@ -333,7 +333,7 @@ describe("CoWriter.handleSendMessage", () => {
     });
 
     it("setSelectedNotebook updates selectedNotebook and saves to storage", () => {
-      coWriter.setSelectedNotebook(1);
+      coWriter.selectNotebookByIndex(1);
       const state = coWriter.getState();
       expect(state.selectedNotebook).toBe(1);
       expect(globalThis.localStorage.setItem).toHaveBeenCalledWith(
@@ -343,9 +343,9 @@ describe("CoWriter.handleSendMessage", () => {
     });
 
     it("setSelectedNotebook does nothing if index is out of bounds", () => {
-      coWriter.setSelectedNotebook(-1);
+      coWriter.selectNotebookByIndex(-1);
       expect(coWriter.getState().selectedNotebook).toBe(0);
-      coWriter.setSelectedNotebook(99);
+      coWriter.selectNotebookByIndex(99);
       expect(coWriter.getState().selectedNotebook).toBe(0);
     });
   });
@@ -503,16 +503,16 @@ describe("CoWriter.handleSendMessage", () => {
     it("can set selected notebook", () => {
       const cw = new CoWriter(fakeStreamChatFn, initialModel);
       cw.addNotebook([{ id: "test2", content: "def" }]);
-      cw.setSelectedNotebook(1);
+      cw.selectNotebookByIndex(1);
       expect(cw.getState().selectedNotebook).toBe(1);
-      cw.setSelectedNotebook(99); // out of bounds
+      cw.selectNotebookByIndex(99); // out of bounds
       expect(cw.getState().selectedNotebook).toBe(1);
     });
 
     it("can add, update, and delete cells", () => {
       const cw = new CoWriter(fakeStreamChatFn, initialModel);
       cw.addNotebook();
-      cw.setSelectedNotebook(1);
+      cw.selectNotebookByIndex(1);
       const cellId = cw.addCell("hello");
       let cells = cw.getState().notebooks[1];
       expect(cells.some((c) => c.id === cellId)).toBe(true);
@@ -529,7 +529,7 @@ describe("CoWriter.handleSendMessage", () => {
     it("can update cell id", () => {
       const cw = new CoWriter(fakeStreamChatFn, initialModel);
       cw.addNotebook();
-      cw.setSelectedNotebook(1);
+      cw.selectNotebookByIndex(1);
       const cellId = cw.addCell("foo");
       cw.updateCellId(cellId, "bar");
       const cells = cw.getState().notebooks[1];

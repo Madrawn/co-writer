@@ -1,4 +1,10 @@
-import type { MarkdownCellData, ChatMessage, StreamChatFn, CoWriterState, StateListener } from "../types";
+import type {
+  MarkdownCellData,
+  ChatMessage,
+  StreamChatFn,
+  CoWriterState,
+  StateListener,
+} from "../types";
 import { models } from "./azureService";
 import { parseGeminiResponse } from "./parser";
 
@@ -81,13 +87,13 @@ export class CoWriter {
   public setModelName(modelName: keyof typeof models) {
     this.modelName = modelName;
   }
-  public setSelectedNotebook(index: number) {
+  public selectNotebookByIndex = (index: number) => {
     if (index < 0 || index >= this.state.notebooks.length) return;
     this.setState(() => ({
       selectedNotebook: index,
     }));
     this.saveSelectedNotebookToStorage();
-  }
+  };
   public addNotebook = (initialCells: MarkdownCellData[] = []) => {
     this.setState((prevState) => {
       const newNotebooks = [...prevState.notebooks, initialCells];
@@ -293,13 +299,20 @@ export class CoWriter {
         }));
       }
 
+      // Extract <thinking>...</thinking> content if present
+      let thinking: string | undefined = undefined;
+      const thinkingMatch = streamedText.match(/<thinking>([\s\S]*?)<\/thinking>/i);
+      if (thinkingMatch) {
+        thinking = thinkingMatch[1].trim();
+      }
+
       const { cleanContent, proposedChanges } =
         parseGeminiResponse(streamedText);
 
       this.setState((prevState) => ({
         chatMessages: prevState.chatMessages.map((msg) =>
           msg.id === modelMessageId
-            ? { ...msg, content: streamedText, cleanContent, proposedChanges }
+            ? { ...msg, content: streamedText, cleanContent, proposedChanges, thinking }
             : msg
         ),
       }));

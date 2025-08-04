@@ -1,8 +1,7 @@
-import React from "react";
+import React, { memo } from "react";
 import ChangePreview from "./ChangePreview";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 import type { ChatMessage } from "../types";
+import MessageBubble from "./MessageBubble";
 
 interface ChatMessagesListProps {
   messages: ChatMessage[];
@@ -19,7 +18,7 @@ const ChatMessagesList: React.FC<ChatMessagesListProps> = ({
   onHighlightCell,
   isLoading,
 }) => (
-  <div className="flex-1 p-6 overflow-y-auto space-y-4">
+  <div className="flex-1 h-full p-6 overflow-y-auto space-y-4">
     {messages.map((msg) => {
       const showChangeCard =
         msg.role === "model" &&
@@ -42,24 +41,7 @@ const ChatMessagesList: React.FC<ChatMessagesListProps> = ({
           </div>
         );
       }
-      return (
-        <div
-          key={msg.id}
-          className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-        >
-          <div
-            className={`max-w-md rounded-xl px-4 py-2 text-white ${
-              msg.role === "user" ? "bg-blue-600" : "bg-gray-700"
-            }`}
-          >
-            <div className="prose prose-invert prose-sm max-w-none prose-p:my-1 prose-p:text-white prose-code:text-pink-300">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                {msg.cleanContent || msg.content}
-              </ReactMarkdown>
-            </div>
-          </div>
-        </div>
-      );
+      return <MessageBubble key={msg.id} msg={msg}></MessageBubble>;
     })}
     {isLoading && messages[messages.length - 1]?.role === "user" && (
       <div className="flex justify-start">
@@ -75,4 +57,4 @@ const ChatMessagesList: React.FC<ChatMessagesListProps> = ({
   </div>
 );
 
-export default ChatMessagesList;
+export default memo(ChatMessagesList);

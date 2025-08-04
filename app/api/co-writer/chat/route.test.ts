@@ -41,14 +41,13 @@ describe("POST /api/co-writer/chat", () => {
     const res = await POST(req);
     expect(res instanceof NextResponse).toBe(true);
     let body = "";
-    // @ts-ignore
+    // @ts-expect-error
     const reader = res.body.getReader();
     const { value, done } = await reader.read();
     if (value) {
       body += new TextDecoder().decode(value);
     }
     expect(body).toMatch(/Azure configuration missing/);
-    // @ts-ignore
     expect(res.status).toBe(500);
   });
 

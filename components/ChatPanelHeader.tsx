@@ -1,4 +1,4 @@
-import React from "react";
+import React, { memo } from "react";
 
 interface ChatPanelHeaderProps {
   modelName: string;
@@ -65,4 +65,4 @@ const ChatPanelHeader: React.FC<ChatPanelHeaderProps> = ({
   </div>
 );
 
-export default ChatPanelHeader;
+export default memo(ChatPanelHeader);

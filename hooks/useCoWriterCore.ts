@@ -27,7 +27,7 @@ export const useCoWriterCore = (modelName: keyof typeof models, selectedNotebook
   }, [modelName]);
 
   useEffect(() => {
-    coWriterInstance!.setSelectedNotebook(selectedNotebook);
+    coWriterInstance!.selectNotebookByIndex(selectedNotebook);
   }, [selectedNotebook]);
 
   return {
@@ -38,7 +38,7 @@ export const useCoWriterCore = (modelName: keyof typeof models, selectedNotebook
     isLoading: state.isLoading,
     addNotebook: coWriterInstance!.addNotebook,
     removeNotebook: coWriterInstance!.removeNotebook,
-    setSelectedNotebook: coWriterInstance!.setSelectedNotebook.bind(coWriterInstance),
+    selectNotebookByIndex: coWriterInstance!.selectNotebookByIndex,
     addCell: coWriterInstance!.addCell,
     deleteCell: coWriterInstance!.deleteCell,
     updateCell: coWriterInstance!.updateCell,

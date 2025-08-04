@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, memo } from "react";
 import type { ChatMessage } from "../types";
 import "./ChatPanel.css";
 import ChatPanelHeader from "./ChatPanelHeader";
@@ -302,4 +302,4 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
   );
 };
 
-export default ChatPanel;
+export default memo(ChatPanel);
