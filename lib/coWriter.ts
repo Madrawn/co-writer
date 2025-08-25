@@ -318,8 +318,20 @@ export class CoWriter {
       }));
     } catch (error) {
       console.error(error);
-      const errorMessage =
-        error instanceof Error ? error.message : "An unknown error occurred.";
+      let errorMessage = "An unknown error occurred.";
+      if (error instanceof Error) {
+        try {
+          const errorJson = JSON.parse(error.message);
+          if (errorJson.error && errorJson.error.message) {
+            errorMessage = errorJson.error.message;
+          } else {
+            errorMessage = error.message;
+          }
+        } catch (e) {
+          errorMessage = error.message;
+        }
+      }
+
       this.setState((prevState) => ({
         chatMessages: prevState.chatMessages.map((msg) =>
           msg.id === modelMessageId

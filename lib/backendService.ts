@@ -22,7 +22,8 @@ export const streamChatResponse = async (
   });
 
   if (!response.ok) {
-    throw new Error(`Backend request failed with status ${response.status}`);
+    const errorBody = await response.text();
+    throw new Error(errorBody || `Backend request failed with status ${response.status}`);
   }
 
   if (!response.body) {

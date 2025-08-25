@@ -58,8 +58,25 @@ export async function POST(req: Request) {
             }).asBrowserStream();
 
             if (azureResponse.status !== "200") {
-                console.error("Azure API error:", azureResponse);
-                return new NextResponse('Error from Azure API', { status: 500 });
+                let errorBody = "An unknown error occurred";
+                if (azureResponse.body) {
+                    try {
+                        const reader = azureResponse.body.getReader();
+                        let result = "";
+                        while (true) {
+                            const { done, value } = await reader.read();
+                            if (done) {
+                                break;
+                            }
+                            result += new TextDecoder().decode(value);
+                        }
+                        errorBody = result;
+                    } catch (e) {
+                        console.error("Error reading Azure error response body:", e);
+                    }
+                }
+                console.error("Azure API error:", azureResponse.status, errorBody);
+                return new NextResponse(errorBody, { status: 500 });
             }
 
             const stream = azureResponse.body;
