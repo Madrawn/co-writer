@@ -1,4 +1,4 @@
-`use client`
+"use client"
 import type {
   MarkdownCellData,
   ChatMessage,
@@ -329,7 +329,9 @@ export class CoWriter {
             errorMessage = error.message;
           }
         } catch (e) {
-          errorMessage = error.message;
+          if (e instanceof Error) {
+            errorMessage = e.message;
+          }
         }
       }
 

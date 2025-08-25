@@ -38,7 +38,7 @@ export default function HomePage(): ReactElement {
   } = useCoWriter(selectedModel, 0, ttsEnabled);
   const handleSendMessageCB = useCallback(
     (message: string) => handleSendMessage(message),
-    [] // No dependencies needed
+    [selectedModel] // No dependencies needed
   );
   const [menuOpen, setMenuOpen] = React.useState<boolean>(false);
   const handleInsertFiles = useCallback(
