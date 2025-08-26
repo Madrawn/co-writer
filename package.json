@@ -2,6 +2,7 @@
   "name": "gemini-co-writer-notebook",
   "private": true,
   "version": "0.0.0",
+  "packageManager": "pnpm@9.1.1",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
