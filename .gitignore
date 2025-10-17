@@ -23,5 +23,5 @@ dist-ssr
 *.sln
 *.sw?
 .next
-.env
 .gemini
+.env
