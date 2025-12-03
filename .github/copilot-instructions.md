@@ -1,3 +1,5 @@
+# Copilot Instructions for co-writer
+
 ## Project Overview
 - **Type:** Next.js app with custom API routes, React components, and LLM (Large Language Model) integration.
 - **Major Directories:**
